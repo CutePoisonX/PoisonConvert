@@ -10,8 +10,11 @@ Installation guide:
 You can download it on your system with:
 
 1) git clone https://github.com/CutePoisonX/PoisonConvert.git
+
 2) cd PoisonConvert
+
 3) make
+
 4) make clean
 
 You should get an executable named "poisonconvert" - thats it.
