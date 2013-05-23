@@ -7,7 +7,7 @@ This progam was designed to batch-convert movies on a Synology-DiskStation.
 
 Installation guide:
 
-You can download it on your system with:
+You can download and compile it on your system with:
 
 1) git clone https://github.com/CutePoisonX/PoisonConvert.git
 
