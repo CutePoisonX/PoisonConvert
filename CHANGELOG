@@ -1,0 +1,20 @@
+Version 1.0 	initial Release
+------------------------------------------------------------------------------------------
+Version 1.1 	1) Added Support to specify Subtitlecodec as a rule and as target
+            	2) Removing File "NUL" after conversion
+            	3) Fixed a Bug where parameters specified with NOT were also converted
+            	4) Fixed a Bug where Videocodecs were not saved correctly
+            	5) Added the possibility to start with custom preference-files:
+               	   ./poisonconvert start [filename 1] [filename 2] [ ...]
+            	6) Added the possibillity to get the Version of poisonconvert with:
+                  ./poisonconvert version
+            	7) Added: Appending special endings for advanced processing:
+                  "_nv", "_na", "_ns". 
+            	8) Changed some converting prompts 
+            	9) Fixed a Bug where the container was not set properly when the videostream did not match...
+------------------------------------------------------------------------------------------
+Version 1.2 	1) Fixed a Bug where audiocodecs were not detected correctly
+            	2) New function: There will be created a log file with useful ffmpeg output while processing
+------------------------------------------------------------------------------------------
+Version 1.2.1 	1) Fixed problem: A space occurred after converting in the .log - filename
+              	2) Fixed a Bug where stereo streams were not detected correctly
