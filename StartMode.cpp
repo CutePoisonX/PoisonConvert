@@ -32,7 +32,7 @@ StartMode::~StartMode()
 int StartMode::gettingFiles()
 {
   string fileextension;
-  string list_dirs = "ls *. >/dev/null 2>&1";// linux: "ls *." windows: "dir *."
+  string list_dirs = "ls *.";// linux: "ls *." windows: "dir *."
   bool already_here = false;
   unsigned int vec_size = 0;
   //getting fileextensions
@@ -61,9 +61,9 @@ int StartMode::gettingFiles()
   for(unsigned int k = 0; k < vec_size; k++)
   {
     list_dirs.append(important_files_.at(k));
-    list_dirs.append(" >> poisonXfileslist 2>/dev/null");
+    list_dirs.append(" >> poisonXfileslist");
     system(list_dirs.c_str());
-    list_dirs = "ls *. >/dev/null 2>&1";// linux: "ls *." windows: "dir *."
+    list_dirs = "ls *.";// linux: "ls *." windows: "dir *."
   }
   important_files_.clear();
   fileman_.readImportatntFiles(important_files_);
@@ -183,7 +183,7 @@ int StartMode::executeCommand()
       ui_.writeString("Done :)", true, "green");
     else
       ui_.writeString("Nothing to be done :p", true, "green");
-    system("rm NUL");
+    //system("rm NUL");
   }
 }
 
@@ -459,7 +459,6 @@ void StartMode::optimizeFile(string& filename)
   qt_start.append(filename);
   qt_start.append("\" ");
   qt_start.append(new_filename);
-  qt_start.append(" >/dev/null 2>&1 ");
 
   system(qt_start.c_str());
   
