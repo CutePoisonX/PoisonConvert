@@ -108,7 +108,6 @@ int StartMode::executeCommand()
       gettingInfos(important_files_.at(job)); 
       applySettings();
       
-      out_container_ = vecman_.sendSinglePreference(1,TARVIDEO, 1);
       rename = "mv \"";
       filename_noext = important_files_.at(job);
       position = filename_noext.find_last_of(".");
@@ -301,6 +300,14 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
     tmp_target_id = vecman_.getTargetIDfromSource(priority_wish, identifier, target_nr);
     copy_whole_thing = false;
     tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 1); //1 is the container if identifier is SRCVIDEO
+    if (identifier == SRCVIDEO)
+    {
+      out_container_ = vecman_.sendSinglePreference(tmp_target_id, TARVIDEO, 1);
+      if (out_container_ == "-")
+      {
+        out_container_ = analyze_.sendSinglePreference(priority_orig, SRCVIDEO, 1); 
+      }
+    }
     if (identifier == SRCAUDIO) //Codec - Audio
     {
       targets_.append(" -c:a:");

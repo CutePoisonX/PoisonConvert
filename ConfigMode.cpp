@@ -1049,7 +1049,7 @@ int ConfigMode::createOutputVideo()
       {
         ui_.writeString("You have to enter a number or '-'", true);
       }
-      if (res_width == "-" || res_width != "copy")
+      if (res_width == "-" || res_width == "copy")
       {
         overjump_res = true;
       }
