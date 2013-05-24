@@ -448,7 +448,7 @@ void StartMode::optimizeFile(string& filename)
 {
   string new_filename = "\"";
   string filename_no_ext;
-  string qt_start = "qtfaststart \"";
+  string qt_start = "qt-faststart \""; //"qtfaststart" for OS X?
   string remove = "rm \"";
   string rename = "mv ";
   unsigned int position;
