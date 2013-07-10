@@ -9,7 +9,6 @@
 #include "UserInterface.h"
 #include <sstream>
 #include <unistd.h>
-#include <iostream>
 
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
@@ -493,7 +492,7 @@ void StartMode::optimizeFile(string& filename, string erase_log)
   qt_start.append(logfile_);
   qt_start.append(" 2>> ");
   qt_start.append(erase_log);
-  cout << qt_start << endl;
+
   system(qt_start.c_str());
   
   remove.append(filename);
@@ -505,7 +504,6 @@ void StartMode::optimizeFile(string& filename, string erase_log)
   rename.append(filename);
   rename.append("\" 2>/dev/null");
 
-  cout << rename << endl;
   system(rename.c_str());
   
   ui_.writeString("  Finished optimizing...", true, "yellow");
