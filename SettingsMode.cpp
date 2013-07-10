@@ -7,18 +7,39 @@
 
 #include "SettingsMode.h"
 #include "UserInterface.h"
-
-
-SettingsMode::SettingsMode(UserInterface& ui, string pref_filename, 
-                           bool erase_original, bool optimize_streaming)
-: Mode(ui), pref_filename_(pref_filename), erase_original_(erase_original), 
-        optimize_streaming_(optimize_streaming)
+#include "YesNoSetting.h"
+#include "FolderSetting.h"
+     
+SettingsMode::SettingsMode(UserInterface& ui)
+: Mode(ui)
 {
+  //----------------------------------------------------------------------------
+  //initialize settings
+  settings_vector_.push_back(new Settings(ui, "config-file", "Selecting filename of config - file", 
+  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "Config"));
+  
+  settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
+  "Please enter the path to the configuration-file", ""));
+    
+  settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
+  "Do you want to delete the original file after the successful conversion? NOT RECOMMENDET ([y/n])", "No"));
+  
+  settings_vector_.push_back(new YesNoSetting(ui, "optimize", "Optimize file for streaming (mp4/m4v/mov only)",
+  "Do you want to optimize file for streaming (mov/mp4/m4v only , [y/n])?", "No"));
+ 
+  settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location for saved logfiles",
+  "Please enter the path where logfiles should be saved", ""));
+  
+  settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
+  "Please enter the path where poisonconvert should look after files", ""));
+  
+  settings_vector_.push_back(new FolderSetting(ui, "destination", "Where to save processed movies",
+  "Please enter the path where poisonconvert should save processed movies", ""));
+  //----------------------------------------------------------------------------
 }
 
 SettingsMode::SettingsMode(const SettingsMode& orig)
-: Mode(orig), erase_original_(orig.erase_original_), pref_filename_(pref_filename_),
-optimize_streaming_(orig.optimize_streaming_)
+: Mode(orig)
 {
 }
 
@@ -30,6 +51,7 @@ int SettingsMode::executeCommand()
 {
   bool endthis = false;
   bool going_back = true;
+  bool enter_options_prompt = false;
 
   do
   {
@@ -40,25 +62,21 @@ int SettingsMode::executeCommand()
     }
 
     input_ = ui_.readStringNoCapitalize();
-    if (input_ == first_selection)
+    enter_options_prompt = true;
+    for (unsigned int i = 0; i < settings_vector_.size(); i++)
     {
-      changeFilename();
-      going_back = true;
-    } else if (input_ == second_selection)
-    {
-      changeDeleteOriginal();
-      going_back = true;
-    } else if (input_ == "exit")
-    {
-      return -1;
-    } else if (input_ == third_selection)
-    {
-      changeOptimizeForStreaming();
-      going_back = true;
+      if (input_ == settings_vector_.at(i)->getName())
+      {
+        settings_vector_.at(i)->setParam();
+        going_back = true;
+        enter_options_prompt = false;
+      } else if (input_ == "exit")
+      {
+        return -1;
+      }
     }
-    else
+    if (enter_options_prompt == true)
     {
-      going_back = false;
       ui_.writeString("Please enter one of the options listed above (without ");
       ui_.writeString("the []).", true);
       endthis = false;
@@ -69,96 +87,67 @@ int SettingsMode::executeCommand()
 int SettingsMode::listSettings()
 {
   ui_.writeString("--------------------------------------------------------", true);
-  ui_.writeString(" -> ");  ui_.writeString(first_list_setting); ui_.writeString(": ");
-  ui_. writeString(pref_filename_, true, "green");
-    
-  ui_.writeString(" -> "); ui_.writeString(second_list_setting); ui_.writeString(": ");
-  if(erase_original_ == true)
-    ui_.writeString("Yes", true, "green");
-  else
-    ui_.writeString("No", true, "green");
-  
-    ui_.writeString(" -> "); ui_.writeString(third_list_setting); ui_.writeString(": ");
-  if(optimize_streaming_ == true)
-    ui_.writeString("Yes", true, "green");
-  else
-    ui_.writeString("No", true, "green");   
+  for(unsigned int i=0; i < settings_vector_.size(); i++)
+  {
+    ui_.writeString(" -> ");  ui_.writeString(settings_vector_.at(i)->getDescription()); 
+    ui_.writeString(": "); ui_. writeString(settings_vector_.at(i)->getParam(), true, "green");
+  }
   ui_.writeString("--------------------------------------------------------", true);
 }
 
 void SettingsMode::standartExecutePrompt()
 {
+  unsigned int align_len;
+  
   ui_.writeString("", true);
   ui_.writeString("Settings Mode!", true, "red");
   ui_.writeString("These are your currrent settings:", true);
   listSettings();
   ui_.writeString("Which of them do you want to change?", true);
   
-  ui_.writeString("  [");
-  ui_.writeString(first_selection, false, "yellow");
-  ui_.writeString("] - ");
-  ui_.writeString(first_list_setting, true);
+  align_len=IdentifyLongestName();
   
-  ui_.writeString("  [");
-  ui_.writeString(second_selection,  false, "yellow");
-  ui_.writeString("]   - ");
-  ui_.writeString(second_list_setting, true);
-  
+  for(unsigned int i=0; i < settings_vector_.size(); i++)
+  {
     ui_.writeString("  [");
-  ui_.writeString(third_selection,  false, "yellow");
-  ui_.writeString("]   - ");
-  ui_.writeString(third_list_setting, true);
+    ui_.writeString(settings_vector_.at(i)->getName(), false, "yellow");
+    ui_.writeString("] ");
+    AlignSpaces(align_len, settings_vector_.at(i)->getName().size());
+    ui_.writeString("- ");
+    ui_.writeString(settings_vector_.at(i)->getDescription(), true);
+  }
   
   ui_.writeString("  ["); ui_.writeString("exit", false, "yellow");
-   ui_.writeString("]     - go back to main screen");
+  ui_.writeString("]");
+  AlignSpaces(align_len, 4);
+  ui_.writeString(" - go back to main screen");
+  
   ui_.writeString("", true);
 }
 
-int SettingsMode::changeFilename()
+void SettingsMode::AlignSpaces(unsigned int align_len,
+                               unsigned int name_size)
 {
-  ui_.writeString("Please enter the filename of the configuration-file ", false, "green");
-  ui_.writeString("without the fileextension.", true, "green");
-  pref_filename_ = ui_.readString();
-  ui_.writeString("Saved. Please restart to load this file.", true, "green");
-  ui_.readString(false);
+  unsigned int space_difference = align_len - name_size;
+  
+  for(int i=1; i<=space_difference; i++)
+  {
+    ui_.writeString(" ");
+  }
 }
 
-void SettingsMode::changeDeleteOriginal()
+unsigned int SettingsMode::IdentifyLongestName()
 {
-  ui_.writeString("Do you want to delete the original file after the successful conversion? NOT RECOMMENDET ([y/n])", true, "green");
-  do
-  {
-    input_ = ui_.readStringNoCapitalize();
-    if (input_ == "y")
-    {
-      erase_original_ = true;
-    } else if (input_ != "n")
-    {
-      ui_.writeString("Plaese enter [y] for 'yes' and [n] for 'no'!", true);
-    } else
-    {
-      erase_original_ = false;
-    }
-  } while (input_ != "y" && input_ != "n");
-  ui_.writeString("Saved.", true, "green");
-}
+  unsigned int length = settings_vector_.at(0)->getName().size();
 
- void SettingsMode::changeOptimizeForStreaming()
- {
-  ui_.writeString("Do you want to optimize file for streaming (mov/mp4/m4v only , [y/n])?", true, "green");
-  do
+  for (unsigned int i=0; i<settings_vector_.size(); i++)
   {
-    input_ = ui_.readStringNoCapitalize();
-    if (input_ == "y")
+    //identify longest setting_name
+    if (settings_vector_.at(i)->getName().size() > length)
     {
-      optimize_streaming_ = true;
-    } else if (input_ != "n")
-    {
-      ui_.writeString("Plaese enter [y] for 'yes' and [n] for 'no'!", true);
-    } else
-    {
-      optimize_streaming_ = false;
+      length = settings_vector_.at(i)->getName().size();
     }
-  } while (input_ != "y" && input_ != "n");
-  ui_.writeString("Saved.", true, "green");
+  }
+  
+  return length;
 }

@@ -6,6 +6,7 @@
  */
 
 #include "VectorManager.h"
+#include <stdexcept> 
 
 VectorManager::VectorManager()
 {

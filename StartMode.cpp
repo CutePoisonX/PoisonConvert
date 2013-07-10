@@ -7,9 +7,10 @@
 
 #include "StartMode.h"
 #include "UserInterface.h"
-
 #include <sstream>
-//#include <iostream> //Test only
+#include <unistd.h>
+#include <iostream>
+
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
                      SettingsMode& settings)
@@ -32,10 +33,12 @@ StartMode::~StartMode()
 int StartMode::gettingFiles()
 {
   string fileextension;
-  string list_dirs = "ls *.";// linux: "ls *." windows: "dir *."
+  string list_dirs = "ls "; // linux: "ls *." windows: "dir *."
+  
   bool already_here = false;
   unsigned int vec_size = 0;
   //getting fileextensions
+  
   for (unsigned int priority = 1; priority <= vecman_.getVectorLen(SRCVIDEO); priority++)
   {
     vec_size = important_files_.size();
@@ -58,15 +61,16 @@ int StartMode::gettingFiles()
   }
   //getting files
   vec_size = important_files_.size();
+  
   for(unsigned int k = 0; k < vec_size; k++)
   {
+    list_dirs = "ls *.";
     list_dirs.append(important_files_.at(k));
-    list_dirs.append(" >> poisonXfileslist");
+    list_dirs.append(" >> /opt/tmp/poisonXfileslist 2>/dev/null");
     system(list_dirs.c_str());
-    list_dirs = "ls *.";// linux: "ls *." windows: "dir *."
   }
   important_files_.clear();
-  fileman_.readImportatntFiles(important_files_);
+  fileman_.readImportantFiles(important_files_);
 }
 
 int StartMode::executeCommand()
@@ -76,12 +80,16 @@ int StartMode::executeCommand()
   string filename_noext;
   string old_filename;
   string old_fileext;
+
   string rename = "mv \"";
   string delete_orig = "rm \"";
-  string logname;
+  string dive_into_dir = settings_.getSettingsParam(MOVIEPATH);
+  string log_erase;
   
   unsigned int position = 0;
   unsigned int job = 0;
+  
+  chdir(dive_into_dir.c_str());
   
   try
   {
@@ -92,11 +100,19 @@ int StartMode::executeCommand()
     ui_.writeString("rights to do so.", true);
     exit_now = false;
   }
-  system("rm poisonXfileslist");
+  system("rm /opt/tmp/poisonXfileslist 2>/dev/null");
   if (exit_now != true)
   {
     for(job = 0; job < important_files_.size(); job++)
     {
+      logfile_ = "\" >> \"";
+      logfile_.append(settings_.getSettingsParam(LOGPATH));
+      logfile_.append(important_files_.at(job));
+      logfile_.append(".log");
+      logfile_.append("\"");
+      
+      WriteLogHeader(job);
+              
       ui_.writeString("", true);
       ui_.writeString("Started job ", false, "red");
       ui_.writeNumber(job + 1, false, "red");
@@ -106,6 +122,7 @@ int StartMode::executeCommand()
       ui_.writeString(important_files_.at(job), true, "red");
       
       gettingInfos(important_files_.at(job)); 
+      
       applySettings();
       
       rename = "mv \"";
@@ -131,12 +148,9 @@ int StartMode::executeCommand()
       rename.append(important_files_.at(job));
       rename.append("\" \"");
       rename.append(old_filename);
-      rename.append("\"");
+      rename.append("\" 2>/dev/null");
       
       system(rename.c_str());
-      
-      logname = important_files_.at(job);
-      logname.append(".log");
       
       ffmpeg_input = "ffmpeg -i \"";
       ffmpeg_input.append(old_filename);
@@ -147,19 +161,25 @@ int StartMode::executeCommand()
       
       filename_noext.append(out_container_);
       ffmpeg_input.append(filename_noext);
-      ffmpeg_input.append("\" 2>>\"");
-      ffmpeg_input.append(logname);
-      ffmpeg_input.append("\" ");
       
-      //cout << ffmpeg_input << endl; //Test only
+      WriteLogFfmpeg(ffmpeg_input);
+      
+      ffmpeg_input.append("\" 2>> ");
+      log_erase = logfile_;
+      log_erase.erase(0,5); //delete: [" >> ] (without brackets) form logfile
+      ffmpeg_input.append(log_erase);
+      
       ui_.writeString("  Converting...", true, "yellow");
       system(ffmpeg_input.c_str());
       ui_.writeString("  Finished converting...", true, "yellow");
       
-      if(settings_.getStreamingSetting() == true && (out_container_ == "m4v" ||
+      if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
          out_container_ == "mov" || out_container_ == "mp4"))
-        optimizeFile(filename_noext);
-      system("rm poisonXprobelist");
+        optimizeFile(filename_noext, log_erase);
+      
+      system("rm /opt/tmp/poisonXprobelist 2>/dev/null");
+      MoveFile(filename_noext);
+      
       maps_.clear();
       targets_.clear();
       nr_audio_targets_ = 0;
@@ -170,10 +190,10 @@ int StartMode::executeCommand()
       analyze_.clearEverything();
       ui_.writeString("Finished job ", false, "red");
       ui_.writeString(important_files_.at(job), true, "red");
-      if(settings_.GetEraseSetting() == true)
+      if(settings_.getSettingsParam(DELETESET) == "Yes")
       {
         delete_orig.append(old_filename);
-        delete_orig.append("\"");
+        delete_orig.append("\" 2>/dev/null");
         system(delete_orig.c_str());
         delete_orig = "rm \"";
       }
@@ -182,7 +202,6 @@ int StartMode::executeCommand()
       ui_.writeString("Done :)", true, "green");
     else
       ui_.writeString("Nothing to be done :p", true, "green");
-    //system("rm NUL");
   }
 }
 
@@ -190,12 +209,17 @@ int StartMode::gettingInfos(string& filename)
 {
   string tmp_cmd = "ffprobe -print_format compact \"";
 
+  WriteLog("1. Analyzed File");
+  WriteLog("");
+  
   tmp_cmd.append(filename);
-  tmp_cmd.append("\" 2> poisonXprobelist");
+  tmp_cmd.append("\" 2> /opt/tmp/poisonXprobelist");
 
   system(tmp_cmd.c_str());
   fileman_.readProperties(filename);
 
+  WriteLogAnalyze();
+  
 }
 
 int StartMode::applySettings()
@@ -210,7 +234,7 @@ int StartMode::applySettings()
   unsigned int vec_len_wish = 0;
   unsigned int vec_len_orig = 0;
   unsigned int correcture = 0;
-
+  
   //selecting maps
   for (unsigned int identifier = SRCVIDEO; identifier <= SRCSUB; identifier++)
   {
@@ -231,7 +255,7 @@ int StartMode::applySettings()
         use_this_id = true;
         for (unsigned int used_item = 0; used_item < used_orig_id_.size(); used_item++)
         {
-          //check, wether id is already in use
+          //check, whether id is already in use
           if ((priority_orig + correcture) == used_orig_id_.at(used_item))
           {
             use_this_id = false;
@@ -251,7 +275,7 @@ int StartMode::applySettings()
             orig_pref = analyze_.sendSinglePreference(priority_orig, identifier, param_nr);
             wish_pref = vecman_.sendSinglePreference(priority_wish, identifier, param_nr);
  
-            if (wish_pref.compare(0, 3, "NOT") == 0) //this value should´nt be equal
+            if (wish_pref.compare(0, 3, "NOT") == 0) //this value should not be equal
             {
               if (wish_pref.compare(3, wish_pref.length(), orig_pref) != 0)
               {
@@ -273,7 +297,7 @@ int StartMode::applySettings()
             maps_.append(ss.str());
             ss.str("");
             used_orig_id_.push_back(priority_orig + correcture);
-
+            
             //evaluating targets
             evaluatingTargets(priority_wish, identifier, priority_orig);
           }
@@ -444,7 +468,7 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
   }
 }
 
-void StartMode::optimizeFile(string& filename)
+void StartMode::optimizeFile(string& filename, string erase_log)
 {
   string new_filename = "\"";
   string filename_no_ext;
@@ -454,31 +478,169 @@ void StartMode::optimizeFile(string& filename)
   unsigned int position;
   
   ui_.writeString("  Started optimizing...", true, "yellow");
-  
+
   position = filename.find_last_of(".");
   filename_no_ext = filename.substr(0, position);
-          
+  
+  WriteLogOptimize();
   new_filename.append(filename_no_ext);
   new_filename.append(".optimized.");
   new_filename.append(out_container_);
-  new_filename.append("\"");
   
   qt_start.append(filename);
   qt_start.append("\" ");
   qt_start.append(new_filename);
-
+  qt_start.append(logfile_);
+  qt_start.append(" 2>> ");
+  qt_start.append(erase_log);
+  cout << qt_start << endl;
   system(qt_start.c_str());
   
   remove.append(filename);
-  remove.append("\"");
+  remove.append("\" 2>/dev/null");
   system(remove.c_str());
   
   rename.append(new_filename);
-  rename.append(" \"");
+  rename.append("\" \"");
   rename.append(filename);
-  rename.append("\"");
+  rename.append("\" 2>/dev/null");
 
+  cout << rename << endl;
   system(rename.c_str());
   
   ui_.writeString("  Finished optimizing...", true, "yellow");
+}
+
+void StartMode::WriteLog(string message)
+{
+  string out = "echo \"";
+  
+  message.append(logfile_);
+  out.append(message);
+
+  system(out.c_str());
+}
+
+void StartMode::WriteLogHeader(int job)
+{
+  string message;
+  
+  WriteLog("-----------------------------------------------------");
+  WriteLog("-----------------------------------------------------");
+  message = "PoisonConvert Logfile for Job: ";
+  message.append(important_files_.at(job));
+  WriteLog(message);
+  WriteLog("-----------------------------------------------------");
+  WriteLog("Started Processing");
+  WriteLog("");
+}
+
+void StartMode::WriteLogAnalyze()
+{
+  string output;
+  string tmp_param[5] = { "   Video:     Container       ",
+                          "              Codec           ",
+                          "              Bitrate         ",
+                          "              Resolution      ",
+                          "              Fps             "};
+  
+  for(int i=0; i<5; i++)
+  {
+    try
+    {
+      output = tmp_param[i];
+      output.append(analyze_.sendSinglePreference(1, SRCVIDEO, i + 1));
+      WriteLog(output);
+    }    
+    catch (exception)
+    {
+      output.append("-");
+      WriteLog(output);
+    }
+  }
+  
+  WriteLog("");
+  tmp_param[0] = "   Audio:     Codec           ";
+  tmp_param[1] = "              Channels        ";
+  tmp_param[2] = "              Language        ";
+  tmp_param[3] = "              Bitrate         ";
+  tmp_param[4] = "              Sample Rate     ";
+  
+  for (int i = 0; i < 5; i++)
+  {
+    try
+    {
+      output = tmp_param[i];
+      output.append(analyze_.sendSinglePreference(1, SRCAUDIO, i + 1));
+      WriteLog(output);
+    }
+    catch(exception)
+    {
+      output.append("-");
+      WriteLog(output);
+    }
+  }
+
+  WriteLog("");
+  tmp_param[0] = "   Subtitles: Codec           ";
+  tmp_param[1] = "              Language        ";
+  
+  for(int i=0; i<2; i++)
+  {
+    try
+    {
+      output = tmp_param[i];
+      output.append(analyze_.sendSinglePreference(1, SRCSUB, i + 1));
+      WriteLog(output);
+    }
+    catch(exception)
+    {
+      output.append("-");
+      WriteLog(output);
+    }
+  }
+  WriteLog("");
+}
+
+void StartMode::WriteLogFfmpeg(string ffmpeg_cmd)
+{
+  string ffmpeg_log = "   ";
+
+  WriteLog("2. ffmpeg command line");
+  WriteLog("");
+
+  for(int i=0;i < ffmpeg_cmd.length(); i++)
+  {
+    if(ffmpeg_cmd[i] == '\"')
+    {
+      ffmpeg_cmd.erase(i,1);
+    }
+  }
+  ffmpeg_log.append(ffmpeg_cmd);
+  WriteLog(ffmpeg_log);
+  WriteLog("");
+  WriteLog("3. ffmpeg output");
+  WriteLog("-----------------------------------------------------");
+}
+
+void StartMode::WriteLogOptimize()
+{
+  WriteLog("-----------------------------------------------------");
+  WriteLog("");
+  WriteLog("4. qt-faststart output");
+  WriteLog("");
+  
+}
+void StartMode::MoveFile(string filename)
+{
+  string move_file = "mv \"";
+  
+  move_file.append(settings_.getSettingsParam(MOVIEPATH));
+  move_file.append(filename);
+  move_file.append("\" \"");
+  move_file.append(settings_.getSettingsParam(DESTINATION));
+  move_file.append(filename);
+  move_file.append("\"");
+  
+  system(move_file.c_str());
 }

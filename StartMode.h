@@ -42,6 +42,7 @@ private:
   string                targets_;
   string                maps_;
   string                out_container_;
+  string                logfile_;
   unsigned int          nr_video_targets_;
   unsigned int          nr_audio_targets_;
   unsigned int          nr_sub_targets_;
@@ -54,7 +55,13 @@ private:
   void                  evaluatingTargets(unsigned int priority_wish, 
                                           unsigned int identifier,
                                           unsigned int priority_orig);
-  void                  optimizeFile(string& filename);
+  void                  optimizeFile(string& filename, string erase_log);
+  void                  WriteLog(string message);
+  void                  WriteLogHeader(int job);
+  void                  WriteLogAnalyze();
+  void                  WriteLogFfmpeg(string ffmpeg_cmd);
+  void                  WriteLogOptimize();
+  void                  MoveFile(string filename);
 };
 
 #endif	/* STARTMODE_H */

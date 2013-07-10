@@ -9,7 +9,7 @@
 #include "FileWriteException.h"
 #include "VectorSourceManager.h"
 #include "AnalyzeMedia.h"
-
+#include "Settings.h"
 #include <sstream>
 #include <vector>
 //#include<iostream>
@@ -34,14 +34,14 @@ FileManager::~FileManager()
 int FileManager::readSettings() throw(FileReadException,
                                       OpenFileException)
 { 
+  unsigned int num_settings;
   ifstream readfile;
-  string first_setting;
-  string second_setting;
-  string third_setting;
+  string tmp_setting;
   string tmp_string; //temporary informations to check if file is corrupt
    
+  num_settings = setting_.getVectorLen();
   //Head
-  readfile.open("Settings");
+  readfile.open("/opt/etc/PoisonConvert_Settings"); // /opt/etc/Settings
   if (readfile.is_open() == false)
     throw OpenFileException();
   getline(readfile, tmp_string, '\n');
@@ -52,38 +52,22 @@ int FileManager::readSettings() throw(FileReadException,
     throw FileReadException();
   }
   
-  //First setting
-  getline(readfile, tmp_string, ' ');
-  ReadFileError(readfile);
-  if (tmp_string != "filename")
+  for(unsigned int i=0; i<num_settings; i++)
   {
-    readfile.close();
-    throw FileReadException();
+    getline(readfile, tmp_string, ' ');
+    ReadFileError(readfile);
+    if (tmp_string != setting_.getSettingsName(i))
+    {
+      readfile.close();
+      throw FileReadException();
+    }
+    getline(readfile, tmp_setting, '\n');
+    ReadFileError(readfile);
+    if (setting_.writeParam(tmp_setting, i) == -1)
+    {
+      throw FileReadException();
+    }
   }
-  getline(readfile, first_setting, '\n');
-  ReadFileError(readfile);
-
-  //Second setting
-  getline(readfile, tmp_string, ' ');
-  ReadFileError(readfile);
-  if (tmp_string != "delete")
-  {
-    readfile.close();
-    throw FileReadException();
-  }
-  getline(readfile, second_setting, '\n');
-  ReadFileError(readfile);
-
-  //third setting
-  getline(readfile, tmp_string, ' ');
-  ReadFileError(readfile);
-  if (tmp_string != "streaming")
-  {
-    readfile.close();
-    throw FileReadException();
-  }
-  getline(readfile, third_setting, '\n');
-  ReadFileError(readfile);
 
   //End of settings
   getline(readfile, tmp_string, '\n');
@@ -101,15 +85,16 @@ int FileManager::readSettings() throw(FileReadException,
     throw FileReadException();
   }
   readfile.close();
-  
-  saveSettings(first_setting, second_setting, third_setting);
 }
 
 void FileManager::saveSettingsToFile() throw(FileWriteException)
 {
   ofstream writefile;
+  unsigned int num_settings;
+   
+  num_settings = setting_.getVectorLen();
   
-  writefile.open("Settings", ostream::out);
+  writefile.open("/opt/etc/PoisonConvert_Settings", ostream::out);
     if (writefile.is_open() == false)
     {
       writefile.close();
@@ -120,24 +105,11 @@ void FileManager::saveSettingsToFile() throw(FileWriteException)
   writefile << "-----Settings-----" << endl;
   
   //First setting (filename)
-  writefile << "filename ";
-  writefile << setting_.getFilenameSetting().c_str() << endl;
-  
-  //Second setting (delete original file)
-  writefile << "delete ";
-  if(setting_.GetEraseSetting() == true)
-    writefile << "YES";
-  else
-    writefile << "NO";
-  writefile << endl;
-
-  //Third setting (use qtfaststart to optimze for streaming)
-  writefile << "streaming ";
-  if (setting_.getStreamingSetting() == true)
-    writefile << "YES";
-  else
-    writefile << "NO";
-  writefile << endl;
+  for(unsigned int i=0; i<num_settings; i++)
+  {
+    writefile << setting_.getSettingsName(i); writefile << " ";
+    writefile << setting_.getSettingsParam(i) << endl;
+  }
   
   //End of file
   writefile << "-----Settings-----" << endl;
@@ -154,29 +126,24 @@ void FileManager::ReadFileError(ifstream& readfile) throw(FileReadException)
   }
 }
 
-void FileManager::saveSettings(string& first_setting, string& second_setting,
-                               string& third_setting)
-{
-  setting_.setFilenameSetting(first_setting);
-  if (second_setting == "YES")
-    setting_.setEraseSetting(true);
-  else
-    setting_.setEraseSetting(false);
-  if (third_setting == "YES")
-    setting_.setStreamingSetting(true);
-  else
-    setting_.setStreamingSetting(false);
-}
-
-void FileManager::savePreferencesToFile() throw(FileWriteException)
+int FileManager::savePreferencesToFile() throw(FileWriteException)
 {
   ofstream writefile;
-  string filename = setting_.getFilenameSetting(); 
+  string filename = setting_.getSettingsParam(CONFIGNAME);
+  string config_file;
   unsigned int identifier = 0;
+  
+  config_file = checkPathToConfig();
+  if(config_file == "")
+  {
+    return -1; //no path to config-file specified
+  }
+  
+  config_file.append(filename);
  
   //filename.append(".txt");
   //Try open stream
-  writefile.open(filename.c_str(), ostream::out);
+  writefile.open(config_file.c_str(), ostream::out);
   if (writefile.is_open() == false)
   {
     writefile.close();
@@ -207,6 +174,15 @@ void FileManager::savePreferencesToFile() throw(FileWriteException)
   //End of file
   writefile << "-----Preferences-----" << endl;
   writefile.close();
+  
+  return 0;
+}
+
+string FileManager::checkPathToConfig()
+{
+  string config_file = setting_.getSettingsParam(CONFIGLOC);
+
+  return config_file;
 }
 
 void FileManager::writePrefs(ofstream& writefile, unsigned int identifier)
@@ -235,14 +211,18 @@ void FileManager::readPreferences() throw (FileReadException, OpenFileException)
 {
   ifstream readfile;
   string tmp_string;
-  string filename = setting_.getFilenameSetting(); 
+  string filename = setting_.getSettingsParam(CONFIGNAME);
+  string config_file = setting_.getSettingsParam(CONFIGLOC);
+  
+  config_file.append(filename);
+  
   unsigned int tmp_count = 0;
   unsigned int identifier;
   //filename.append(".txt");
   
   if(readfile.is_open() == true)
     readfile.close();
-  readfile.open(filename.c_str());
+  readfile.open(config_file.c_str());
   if (readfile.is_open() == false)
   {
     readfile.close();
@@ -397,12 +377,12 @@ bool FileManager::stringToInt(std::string& string_number,
   return true;
 }
 
-void FileManager::readImportatntFiles(vector<string>& filenames) throw (FileReadException, OpenFileException)
+void FileManager::readImportantFiles(vector<string>& filenames) throw (FileReadException, OpenFileException)
 {
   ifstream readfile;
   string tmp_filename = "start";
   
-  readfile.open("poisonXfileslist");
+  readfile.open("/opt/tmp/poisonXfileslist");
   if (readfile.is_open() == false)
   {
     readfile.close();
@@ -426,13 +406,14 @@ void FileManager::readProperties(string filename) throw (FileReadException, Open
   unsigned int position = 0;
   unsigned int position_two = 0;
   unsigned int position_video = 0;
-  readfile.open("poisonXprobelist");
+  
+  readfile.open("/opt/tmp/poisonXprobelist");
   if (readfile.is_open() == false)
   {
     readfile.close();
     throw OpenFileException();
   }
-
+  
   do
   {
     getline(readfile, line, '\n');
@@ -471,7 +452,7 @@ void FileManager::readProperties(string filename) throw (FileReadException, Open
       {
         position_two = line.find("(", 0);
         readPropsSub(line, position_two, params[0], params[1]);
-        //params[1] = "OFF";
+      //params[1] = "OFF";
         params[2] = "OFF";
         params[3] = "OFF";
         params[4] = "OFF";

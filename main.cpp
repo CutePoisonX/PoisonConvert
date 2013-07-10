@@ -15,20 +15,22 @@
 #include "SettingsMode.h"
 #include "StartMode.h"
 #include "AnalyzeMedia.h"
+#include "Settings.h"
+#include "YesNoSetting.h"
 
  
 using namespace std;
 
-const string version = "Version: 1.2.1";
+const string version = "Version: 1.3";
 
 int main(int argc, char** argv)
 {
-  string first_setting = "Config";
   string input;
   string startargument = " ";
   string filenameargument = " ";
   bool going_back = true;
   bool next_file = false;
+  bool settings_fail = false;
   
   if(argv[1] != 0)
     startargument = argv[1];
@@ -39,7 +41,8 @@ int main(int argc, char** argv)
   VectorSourceManager vecman;
   AnalyzeMedia analyze;
   ConfigMode configmode(ui, vecman);
-  SettingsMode settingsmode(ui, first_setting, false, false);
+  SettingsMode settingsmode(ui);
+  
   FileManager filemanager(settingsmode, vecman, analyze);
   StartMode startmode(ui, vecman, filemanager, analyze, settingsmode);
 
@@ -49,13 +52,13 @@ int main(int argc, char** argv)
     filemanager.readSettings();
   } catch (OpenFileException)
   {
-    ui.writeString("Can not open settings-file. Please check if file is present and filename is \"Settings\".", true, "red");
-    ui.writeString("Loaded with default settings.", true, "red");
+    ui.writeString("Can not open settings-file. Please check if file is present in /opt/etc and filename is \"PoisonConvert_Settings\".", true, "red");
+    ui.writeString("Please check settings-menu.", true, "red");
     ui.readString(false);
   } catch (exception)
   {
-    ui.writeString("There occured an error at reading out the \"Settings\"-file! Please enter settings again.", true, "red");
-    ui.writeString("Loaded with default settings.", true, "red");
+    ui.writeString("There occured an error at reading out the \"Settings\"-file! Please enter settings.", true, "red");
+    ui.writeString("Please check settings-menu.", true, "red");
     ui.readString(false);
   }
   
@@ -71,8 +74,8 @@ int main(int argc, char** argv)
       filemanager.readPreferences();
     } catch (OpenFileException)
     {
-      ui.writeString("Can not open Configuration-file! Please check if file is present and your entered filename is correct.", true, "red");
-      ui.writeString("Loaded without any configuration.", true, "red");
+      ui.writeString("Can not open Configuration-file! Please check if file is present and you entered filename and path correctly.", true, "red");
+      ui.writeString("Please go to settings-menu and enter correct settings.", true, "red");
       vecman.clearAllInstances();
       ui.readString(false);
     } catch (exception)
@@ -114,39 +117,69 @@ int main(int argc, char** argv)
       input = ui.readStringNoCapitalize();
       if (input == "start")
       {
+        settings_fail = false;
+        for (int i = 0; i < settingsmode.getVectorLen(); i++)
+        {
+          if (settingsmode.getSettingsParam(i) == "")
+          {
+            ui.writeString("Empty setting: ", false, "red");
+            ui.writeString(settingsmode.getSettingsName(i), true, "red");
+            settings_fail = true;
+          }
+        }
+
         if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
             vecman.getVectorLen(SRCSUB) != 0)
         {
-          try
+          if (settings_fail == false)
           {
-            startmode.executeCommand();
-          } catch (exception)
-          {
-            system("clear");
-            ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true);
-            analyze.clearAllInstances();
-            vecman.clearAllInstances();
-            return -1;
+            try
+            {
+              startmode.executeCommand();
+            } catch (exception)
+            {
+              system("clear");
+              ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+              analyze.clearAllInstances();
+              vecman.clearAllInstances();
+              return -1;
+            }
+            going_back = true;
           }
-          going_back = true;
         } else
         {
           ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, "green");
+          ui.readString(false);
+          going_back = false;
+        }
+        if (settings_fail == true)
+        {
+          ui.writeString("Please enter listed setting(s). Go to 'settings - menu' to do so.", true, "green");
+          ui.readString(false);
           going_back = false;
         }
       } else if (input == "config")
       {
         try
         {
+          if( filemanager.checkPathToConfig() == "" )
+          {
+            ui.writeString("Warning: You did not specify a path to the config file in settings. Changes will not be saved", true, "red");
+            ui.readString(false);
+          }
           configmode.executeCommand();
-          filemanager.savePreferencesToFile();
+          if(filemanager.savePreferencesToFile() == -1)
+          {
+            ui.writeString("Did not save changes because you did not specify a path to a config file in settings.", true, "red");
+            ui.readString(false);
+          }
         } catch (FileWriteException)
         {
-          ui.writeString("Can not write configuration-file! Please check if I have enough rights to do so.", true);
+          ui.writeString("Can not write configuration-file! Please check if poisonconvert has enough rights to do so.", true, "red");
         } catch (exception)
         {
           system("clear");
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true);
+          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
           analyze.clearAllInstances();
           vecman.clearAllInstances();
           return -1;
@@ -160,14 +193,30 @@ int main(int argc, char** argv)
           filemanager.saveSettingsToFile();
         } catch (FileWriteException)
         {
-          ui.writeString("Can not write configuration-file! Please check if I have enough rights to do so.", true);
+          ui.writeString("Can not write settings-file! Please check if poisonconvert has enough rights to do so.", true, "red");
+          ui.readString(false);
         } catch (exception)
         {
           system("clear");
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together,", true);
+          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
           analyze.clearAllInstances();
           vecman.clearAllInstances();
           return -1;
+        }
+        try
+        {
+          vecman.clearAllInstances();
+          filemanager.readPreferences();
+        } catch (OpenFileException)
+        {
+          ui.writeString("Created configuration-file.", true, "red");
+          ui.readString(false);
+        } catch (exception)
+        {
+          ui.writeString("There occured an error at reading out the configuration-file! Seems, that it is corrupt.", true, "red");
+          ui.writeString("Loaded without any configuration.", true, "red");
+          vecman.clearAllInstances();
+          ui.readString(false);
         }
         going_back = true;
       } else if (input != "exit")
@@ -183,7 +232,7 @@ int main(int argc, char** argv)
       for (unsigned int arg = 2; arg < argc; arg++)
       {
         filenameargument = argv[arg];
-        settingsmode.setFilenameSetting(filenameargument);
+        settingsmode.writeParam(filenameargument, CONFIGNAME);
 
         try
         {
@@ -214,7 +263,7 @@ int main(int argc, char** argv)
             } catch (exception)
             {
               system("clear");
-              ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together,", true);
+              ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
               analyze.clearAllInstances();
               vecman.clearAllInstances();
               return -1;
@@ -228,14 +277,14 @@ int main(int argc, char** argv)
           }
         }
       }
-    } else //the user only specified "start" - so we are loading de default config-file
+    } else //the user only specified "start" - so we are loading the default config-file
     {
       try
       {
         filemanager.readPreferences();
       } catch (OpenFileException)
       {
-        ui.writeString("Can not open Configuration-file! Please check if file is present and your entered filename is correct.", true, "red");
+        ui.writeString("Can not open Configuration-file! Please check if file is present and you entered filename and path correctly.", true, "red");
         ui.writeString("Loaded without any configuration.", true, "red");
         vecman.clearAllInstances();
         ui.readString(false);
@@ -257,7 +306,7 @@ int main(int argc, char** argv)
         } catch (exception)
         {
           system("clear");
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together,", true);
+          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true);
           analyze.clearAllInstances();
           vecman.clearAllInstances();
           return -1;
@@ -275,4 +324,3 @@ int main(int argc, char** argv)
   vecman.clearAllInstances();
   return 0;
 }
-

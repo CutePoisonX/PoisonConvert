@@ -9,69 +9,69 @@
 #define	SETTINGSMODE_H
 
 #include "Mode.h"
+#include "Settings.h"
 #include <string>
+#include <vector>
+
+//order of variables in enum must be exactly as order of vector element-settings in settings_vector_
+enum { 
+       CONFIGNAME,
+       CONFIGLOC,
+       DELETESET, 
+       OPTIMIZESET,
+       LOGPATH,
+       MOVIEPATH,
+       DESTINATION
+     };
+     
 using namespace std;
-
-//settings in list-command
-const string first_list_setting = "Selecting filename of config - file";
-const string second_list_setting = "Delete original file after conversion";
-const string third_list_setting = "Optimize file for streaming (mp4/m4v/mov only)";
-
-//selections
-const string first_selection = "filename";
-const string second_selection = "delete";
-const string third_selection = "stream";
-
 class UserInterface;
 
 class SettingsMode : public Mode {
 public:
   
-                SettingsMode(UserInterface& ui, string pref_filename,
-                            bool erase_original, bool optimize_streaming);
+                SettingsMode(UserInterface& ui);
                 SettingsMode(const SettingsMode& orig);
   virtual      ~SettingsMode();
   
   int           executeCommand();
+
+  const string getSettingsParam(unsigned int setting_nr)
+  {
+    if(setting_nr >= 0)
+    {
+        return settings_vector_.at(setting_nr)->getParam();
+    } else
+    {
+      return "ERROR - INDEX OUT OF BOUNCE";
+    }
+  }
+
+  const string getSettingsName(unsigned int setting_nr)
+  {
+    if(setting_nr >= 0)
+    {
+        return settings_vector_.at(setting_nr)->getName();
+    } else
+    {
+      return "ERROR - INDEX OUT OF BOUNCE";
+    }
+  }
   
-  //----------------------------------------------------------------------------
-  const bool  getStreamingSetting() const
+  const unsigned int getVectorLen()
   {
-    return optimize_streaming_;
+    return settings_vector_.size();
   }
-
-  const bool GetEraseSetting() const
+  
+  const int writeParam(string new_setting, unsigned int setting_nr)
   {
-    return erase_original_;
+    return settings_vector_.at(setting_nr)->writeParam(new_setting);
   }
-
-  const string getFilenameSetting() const
-  {
-    return pref_filename_;
-  }
-
-  void setStreamingSetting(bool optimize_streaming_)
-  {
-    this->optimize_streaming_ = optimize_streaming_;
-  }
-
-  void setEraseSetting(bool erase_original_)
-  {
-    this->erase_original_ = erase_original_;
-  }
-
-  void setFilenameSetting(string pref_filename_)
-  {
-    this->pref_filename_ = pref_filename_;
-  }
-  //----------------------------------------------------------------------------
   
 private:
   
   //----------------------------------------------------------------------------
-  string        pref_filename_;
-  bool          erase_original_;
-  bool          optimize_streaming_;
+  vector<Settings*> settings_vector_;
   //----------------------------------------------------------------------------
   
   void          standartExecutePrompt();
@@ -79,6 +79,8 @@ private:
   void          changeOptimizeForStreaming(); //Third setting
   int           changeFilename(); //first_setting
   int           listSettings();
+  void          AlignSpaces(unsigned int align_len, unsigned int vec_element);
+  unsigned int  IdentifyLongestName();
 };
 
 #endif	/* SETTINGSMODE_H */

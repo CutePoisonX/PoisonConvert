@@ -33,8 +33,9 @@ public:
   
   void          saveSettingsToFile() throw(FileWriteException);
   void          readPreferences() throw (FileReadException, OpenFileException);
-  void          savePreferencesToFile() throw(FileWriteException);
-  void          readImportatntFiles(vector<string>& filenames) throw (FileReadException, 
+  int          savePreferencesToFile() throw(FileWriteException);
+  string           checkPathToConfig();
+  void          readImportantFiles(vector<string>& filenames) throw (FileReadException, 
                                                                       OpenFileException);
   void          readProperties(string filename) throw (FileReadException, OpenFileException);
   void          readPropsVideo(string line, unsigned int pos_start, string (&params)[5]);
@@ -49,8 +50,6 @@ private:
   AnalyzeMedia&         analyze_;
   //----------------------------------------------------------------------------
   
-  void          saveSettings(string& first_setting, string& second_setting,
-                             string& third_setting);
   void          ReadFileError(ifstream& readfile) throw (FileReadException);
   void          writePrefs(ofstream& writefile, unsigned int identifier);
   void          readPrefs(ifstream& readfile, unsigned int identifier, 
