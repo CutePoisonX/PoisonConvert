@@ -17,9 +17,16 @@ You can download and compile it on your system with:
 
 4) make clean
 
-You should get an executable named "poisonconvert" - thats it.
+5) mv poisonconvert /opt/bin/poisonconvert
+   
+Done :)
+(You can delete the source-files now)
 
 For further instructions please read the Wiki:
 https://github.com/CutePoisonX/PoisonConvert/wiki
+
+If you want to uninstall the program, perform the following steps:
+1) rm /opt/bin/poisonconvert
+2) rm /opt/bin/PoisonConvert_Settings
 
 I don´t take responsibility for any harm done by this program. 
