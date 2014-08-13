@@ -300,7 +300,7 @@ int main(int argc, char** argv)
             }
           }
         }
-        ui.writeString("", true,);
+        ui.writeString("", true);
       }
     } else //the user only specified "start" - so we are loading the default config-file
     {
