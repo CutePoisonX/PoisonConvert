@@ -32,16 +32,14 @@ StartMode::~StartMode()
 {
 }
 
-vector<string> StartMode::listDirectory(string dir)
+int StartMode::listDirectory(string dir, vector<string>& files_of_interest)
 {
   DIR* target_dir;
-  vector<string> files_of_interest;
-  
+
   target_dir = opendir(dir.c_str());
   if(target_dir == NULL)
   {
-    ui_.writeString("Could not open source directory! Can not continue ...");
-    return files_of_interest;
+    return -1;
   }
 
   struct dirent* dirP;
@@ -62,42 +60,39 @@ vector<string> StartMode::listDirectory(string dir)
     else
     {
       path = dir + "/" + dirP->d_name;
-    }   
-    //Skip current file / directory if it is invalid in some way
-    if(stat(path.c_str(), &filestat))
-    {
-      continue;
     }
+
+    stat(path.c_str(), &filestat);
 
     //Recursively call this function if current object is a directory
     if(S_ISDIR(filestat.st_mode)) 
     {
-      listDirectory(path);
+      listDirectory(path, files_of_interest);
       continue;
     }
 
     string path_ext = path.substr(path.find_last_of(".") + 1);
     unsigned int vec_size = important_files_.size();
-    
+
     for(unsigned int k = 0; k < vec_size; k++)
-    {      
+    {
       if (path_ext == important_files_.at(k))
       {
-          files_of_interest.push_back(path);
-          break;
+        ui_.writeString("Found file: " + path, true);
+        files_of_interest.push_back(path);
+        break;
       }
     }
   }
 
   closedir(target_dir);
 
-  return files_of_interest;
+  return 0;
 }
 
 int StartMode::gettingFiles()
 {
   string fileextension;
-  string list_dirs = "ls "; // linux: "ls *." windows: "dir *."
   
   bool already_here = false;
   unsigned int vec_size = 0;
@@ -125,11 +120,13 @@ int StartMode::gettingFiles()
   }
   
   //getting files
-  vector<string> files_of_interest = listDirectory(settings_.getSettingsParam(MOVIEPATH));
-  
-  if (files_of_interest.empty())
+  vector<string> files_of_interest;
+  string directory_to_list = settings_.getSettingsParam(MOVIEPATH);
+
+  if (listDirectory(directory_to_list.substr(0, directory_to_list.size() - 1), files_of_interest) == -1)
   {
-      throw OpenFileException();
+    ui_.writeString("Could not open source directory! Can not continue ...");
+    throw OpenFileException();
   }
   else
   {
@@ -153,13 +150,19 @@ int StartMode::executeCommand()
   unsigned int position = 0;
   unsigned int job = 0;
   
+  if (vecman_.getVectorLen(SRCVIDEO) == 0)
+  {
+    ui_.writeString("You have to enter at least one video-rule to start.", true);
+    return -1;
+  }
+
   try
   {
    gettingFiles(); 
   } catch (FileException)
   {
     ui_.writeString("Could not get any files to process.", true);
-    exit_now = false;
+    exit_now = true;
   }
  
   if (exit_now != true)
@@ -192,7 +195,6 @@ int StartMode::executeCommand()
       position = filename_noext.find_last_of(".");
       old_fileext = filename_noext.substr(position, filename_noext.length() - position);
       filename_noext.erase(position + 1, filename_noext.length());
-      
       
       old_filename = important_files_.at(job);
       old_filename.append(".old");
@@ -534,7 +536,7 @@ void StartMode::optimizeFile(string& filename, string erase_log)
 {
   string new_filename = "\"";
   string filename_no_ext;
-  string qt_start = "qt-faststart \""; //"qtfaststart" for OS X?
+  string qt_start = "qt-faststart \"";
   string remove = "rm \"";
   string rename = "mv ";
   unsigned int position;
@@ -692,16 +694,18 @@ void StartMode::WriteLogOptimize()
   WriteLog("");
   
 }
-void StartMode::MoveFile(string filename)
+
+void StartMode::MoveFile(string filename_full_path)
 {
   string move_file = "mv \"";
+  string movie_destination = settings_.getSettingsParam(DESTINATION);
+  string filename_without_path = filename_full_path.substr(filename_full_path.find_last_of("/"));
   
-  move_file.append(settings_.getSettingsParam(MOVIEPATH));
-  move_file.append(filename);
+  move_file.append(filename_full_path);
   move_file.append("\" \"");
-  move_file.append(settings_.getSettingsParam(DESTINATION));
-  move_file.append(filename);
-  move_file.append("\"");
+  move_file.append(movie_destination.substr(0, movie_destination.size() - 1));
+  move_file.append(filename_without_path);
+  move_file.append("\" 2>/dev/null");
   
   system(move_file.c_str());
 }

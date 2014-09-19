@@ -48,7 +48,7 @@ private:
   unsigned int          nr_sub_targets_;
   //----------------------------------------------------------------------------
   
-  vector<string>        listDirectory(string path); 
+  int                   listDirectory(string dir, vector<string>& files_of_interest);
   int                   gettingFiles();
   int                   gettingInfos(string& filename);
   int                   applySettings();
@@ -62,7 +62,7 @@ private:
   void                  WriteLogAnalyze();
   void                  WriteLogFfmpeg(string ffmpeg_cmd);
   void                  WriteLogOptimize();
-  void                  MoveFile(string filename);
+  void                  MoveFile(string filename_full_path);
 };
 
 #endif	/* STARTMODE_H */

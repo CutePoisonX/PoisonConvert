@@ -300,7 +300,9 @@ int ConfigMode::createRuleVideo()
     }
     if (param1_ == "")
       ui_.writeString("Please enter something.", true);
-  } while (param1_ == "" || container_not == true);
+    else if (param1_ == "-")
+      ui_.writeString("Value \"any\" is not supported for the container property. Please enter a valid container.", true);
+  } while (param1_ == "" || param1_ == "-" || container_not == true);
 
   do
   {
@@ -1718,10 +1720,10 @@ int ConfigMode::deleteConfig()
         ui_.writeString("  Do you want to delete an output-stream or a rule?", true);
         ui_.writeString("  [");
         ui_.writeString("rule", false, "yellow");
-        ui_.writeString("]   - create new rule", true); //OK
+        ui_.writeString("]   - delete rule", true);
         ui_.writeString("  [");
         ui_.writeString("target", false, "yellow");
-        ui_.writeString("] - create new output-stream", true);
+        ui_.writeString("] - delete output-stream", true);
         ui_.writeString("  [");
         ui_.writeString("exit", false, "yellow");
         ui_.writeString("]   - go back", true);
