@@ -38,7 +38,7 @@ vector<string> StartMode::listDirectory(string dir)
   vector<string> files_of_interest;
   
   target_dir = opendir(dir.c_str());
-  if(target_dir == nullptr) 
+  if(target_dir == NULL)
   {
     ui_.writeString("Could not open source directory! Can not continue ...");
     return files_of_interest;
@@ -72,12 +72,12 @@ vector<string> StartMode::listDirectory(string dir)
     //Recursively call this function if current object is a directory
     if(S_ISDIR(filestat.st_mode)) 
     {
-      ParseDirectory(path);
+      listDirectory(path);
       continue;
     }
 
     string path_ext = path.substr(path.find_last_of(".") + 1);
-    vec_size = important_files_.size();
+    unsigned int vec_size = important_files_.size();
     
     for(unsigned int k = 0; k < vec_size; k++)
     {      
@@ -134,7 +134,7 @@ int StartMode::gettingFiles()
   else
   {
     important_files_.clear();
-    important_files = files_of_interest;
+    important_files_ = files_of_interest;
   }
 }
 
@@ -166,7 +166,7 @@ int StartMode::executeCommand()
   {
     for(job = 0; job < important_files_.size(); job++)
     {
-      string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1)
+      string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1);
       logfile_ = "\" >> \"";
       logfile_.append(settings_.getSettingsParam(LOGPATH));
       logfile_.append(filename_without_path);
