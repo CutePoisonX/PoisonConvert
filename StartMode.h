@@ -48,6 +48,7 @@ private:
   unsigned int          nr_sub_targets_;
   //----------------------------------------------------------------------------
   
+  vector<string>        listDirectory(string path); 
   int                   gettingFiles();
   int                   gettingInfos(string& filename);
   int                   applySettings();

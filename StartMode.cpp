@@ -9,6 +9,9 @@
 #include "UserInterface.h"
 #include <sstream>
 #include <unistd.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
@@ -27,6 +30,68 @@ StartMode::StartMode(const StartMode& orig)
 
 StartMode::~StartMode()
 {
+}
+
+vector<string> StartMode::listDirectory(string dir)
+{
+  DIR* target_dir;
+  vector<string> files_of_interest;
+  
+  target_dir = opendir(dir.c_str());
+  if(target_dir == nullptr) 
+  {
+    ui_.writeString("Could not open source directory! Can not continue ...");
+    return files_of_interest;
+  }
+
+  struct dirent* dirP;
+  struct stat filestat;
+  std::string path;
+  while( (dirP = readdir(target_dir)) ) 
+  {
+    //Skip current object if it is this directory or parent directory
+    if(!strncmp(dirP->d_name, ".", 1) || !strncmp(dirP->d_name, "..", 2))
+    {
+      continue;
+    }
+
+    if(dir == ".")
+    {
+      path = dirP->d_name;
+    }
+    else
+    {
+      path = dir + "/" + dirP->d_name;
+    }   
+    //Skip current file / directory if it is invalid in some way
+    if(stat(path.c_str(), &filestat))
+    {
+      continue;
+    }
+
+    //Recursively call this function if current object is a directory
+    if(S_ISDIR(filestat.st_mode)) 
+    {
+      ParseDirectory(path);
+      continue;
+    }
+
+    string path_ext = path.substr(path.find_last_of(".") + 1);
+    vec_size = important_files_.size();
+    
+    for(unsigned int k = 0; k < vec_size; k++)
+    {      
+      if (path_ext == important_files_.at(k))
+      {
+          files_of_interest.push_back(path);
+          break;
+      }
+    }
+  }
+
+  closedir(target_dir);
+
+  return files_of_interest;
 }
 
 int StartMode::gettingFiles()
@@ -58,18 +123,19 @@ int StartMode::gettingFiles()
       important_files_.push_back(fileextension);
     }
   }
-  //getting files
-  vec_size = important_files_.size();
   
-  for(unsigned int k = 0; k < vec_size; k++)
+  //getting files
+  vector<string> files_of_interest = listDirectory(settings_.getSettingsParam(MOVIEPATH));
+  
+  if (files_of_interest.empty())
   {
-    list_dirs = "ls *.";
-    list_dirs.append(important_files_.at(k));
-    list_dirs.append(" >> /opt/tmp/poisonXfileslist 2>/dev/null");
-    system(list_dirs.c_str());
+      throw OpenFileException();
   }
-  important_files_.clear();
-  fileman_.readImportantFiles(important_files_);
+  else
+  {
+    important_files_.clear();
+    important_files = files_of_interest;
+  }
 }
 
 int StartMode::executeCommand()
@@ -82,31 +148,28 @@ int StartMode::executeCommand()
 
   string rename = "mv \"";
   string delete_orig = "rm \"";
-  string dive_into_dir = settings_.getSettingsParam(MOVIEPATH);
   string log_erase;
   
   unsigned int position = 0;
   unsigned int job = 0;
-  
-  chdir(dive_into_dir.c_str());
   
   try
   {
    gettingFiles(); 
   } catch (FileException)
   {
-    ui_.writeString("There occured an error at reading out the temporary file 'poisonXfileslist'! Please check my ");
-    ui_.writeString("rights to do so.", true);
+    ui_.writeString("Could not get any files to process.", true);
     exit_now = false;
   }
-  system("rm /opt/tmp/poisonXfileslist 2>/dev/null");
+ 
   if (exit_now != true)
   {
     for(job = 0; job < important_files_.size(); job++)
     {
+      string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1)
       logfile_ = "\" >> \"";
       logfile_.append(settings_.getSettingsParam(LOGPATH));
-      logfile_.append(important_files_.at(job));
+      logfile_.append(filename_without_path);
       logfile_.append(".log");
       logfile_.append("\"");
       
@@ -118,7 +181,7 @@ int StartMode::executeCommand()
       ui_.writeString("/", false, "red");
       ui_.writeNumber(important_files_.size(), false, "red");
       ui_.writeString(": ", false, "red");
-      ui_.writeString(important_files_.at(job), true, "red");
+      ui_.writeString(filename_without_path, true, "red");
       
       gettingInfos(important_files_.at(job)); 
       
@@ -165,7 +228,7 @@ int StartMode::executeCommand()
       
       ffmpeg_input.append("\" 2>> ");
       log_erase = logfile_;
-      log_erase.erase(0,5); //delete: [" >> ] (without brackets) form logfile
+      log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
       ffmpeg_input.append(log_erase);
       
       ui_.writeString("  Converting...", true, "yellow");
