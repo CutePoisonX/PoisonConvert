@@ -36,4 +36,6 @@ or perform the following steps:
 
 2) rm /opt/etc/PoisonConvert_Settings
 
-and don't forget to remove the Config files and the log files.
+3) rm -r /opt/etc/PoisonConvert_Config-files
+
+and don't forget to remove the other Config files and the log files.
