@@ -16,10 +16,10 @@ SettingsMode::SettingsMode(UserInterface& ui)
   //----------------------------------------------------------------------------
   //initialize settings
   settings_vector_.push_back(new Settings(ui, "config-file", "Selecting filename of config - file", 
-  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "Config"));
+  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "EmptyConfig"));
   
   settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
-  "Please enter the path to the configuration-file", ""));
+  "Please enter the path to the configuration-file", "/opt/etc/PoisonConvert_Config-files"));
     
   settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
   "Do you want to delete the original file after the successful conversion? NOT RECOMMENDET ([y/n])", "No"));

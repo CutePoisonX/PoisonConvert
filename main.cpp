@@ -21,7 +21,7 @@
  
 using namespace std;
 
-const string version = "Version: 1.3";
+const string version = "Version: 1.4";
 
 int main(int argc, char** argv)
 {
@@ -210,7 +210,7 @@ int main(int argc, char** argv)
             filemanager.readPreferences();
           } catch (OpenFileException)
           {
-            ui.writeString("Created config-file.", true, "red");
+            ui.writeString("Attention: Config file empty or not created (this is normal if you specified a new config-file. Just create some configurations).", true, "red");
             ui.readString(false);
           } catch (exception)
           {

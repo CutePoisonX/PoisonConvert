@@ -13,6 +13,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <iostream>
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
                      SettingsMode& settings)
@@ -169,6 +170,8 @@ int StartMode::executeCommand()
   {
     for(job = 0; job < important_files_.size(); job++)
     {
+      int ffmpeg_response = 1;
+
       string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1);
       logfile_ = "\" >> \"";
       logfile_.append(settings_.getSettingsParam(LOGPATH));
@@ -232,17 +235,35 @@ int StartMode::executeCommand()
       log_erase = logfile_;
       log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
       ffmpeg_input.append(log_erase);
+      ffmpeg_input.append(" ; echo $? > /opt/tmp/PoisonSearch_ffmpeg_status");
       
       ui_.writeString("  Converting...", true, "yellow");
-      system(ffmpeg_input.c_str());
-      ui_.writeString("  Finished converting...", true, "yellow");
-      
-      if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
-         out_container_ == "mov" || out_container_ == "mp4"))
-        optimizeFile(filename_noext, log_erase);
-      
+      ffmpeg_response = system(ffmpeg_input.c_str());
+      if (ffmpeg_response == 0)
+      {
+        ui_.writeString("  Finished converting...", true, "yellow");
+        if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
+           out_container_ == "mov" || out_container_ == "mp4"))
+        {
+          optimizeFile(filename_noext, log_erase);
+        }
+
+        MoveFile(filename_noext);
+      }
+      else
+      {
+        ui_.writeString("  Conversion failed...", true, "yellow");
+
+        //delete new file (incomplete)
+        string new_file_delete = "rm \"" + filename_noext  + "\"  2>/dev/null";
+        system(new_file_delete.c_str());
+        //revert .old... extension:
+        string rename_back = "mv \"" + old_filename + "\" \"" + important_files_.at(job) + "\" 2>/dev/null";
+        system(rename_back.c_str());
+      }
+
       system("rm /opt/tmp/poisonXprobelist 2>/dev/null");
-      MoveFile(filename_noext);
+
       
       maps_.clear();
       targets_.clear();
@@ -254,7 +275,8 @@ int StartMode::executeCommand()
       analyze_.clearEverything();
       ui_.writeString("Finished job ", false, "red");
       ui_.writeString(important_files_.at(job), true, "red");
-      if(settings_.getSettingsParam(DELETESET) == "Yes")
+      if(settings_.getSettingsParam(DELETESET) == "Yes" &&
+         ffmpeg_response == 0)
       {
         delete_orig.append(old_filename);
         delete_orig.append("\" 2>/dev/null");
@@ -391,7 +413,7 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
     if (identifier == SRCVIDEO)
     {
       out_container_ = vecman_.sendSinglePreference(tmp_target_id, TARVIDEO, 1);
-      if (out_container_ == "-")
+      if (out_container_ == "-" || out_container_ == "copy")
       {
         out_container_ = analyze_.sendSinglePreference(priority_orig, SRCVIDEO, 1); 
       }

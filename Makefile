@@ -3,9 +3,13 @@ CXXFLAGS=-c -Wall -g
 LDFLAGS=
 SOURCES = $(wildcard *.cpp)
 OBJECTS = ${SOURCES:.cpp=.o}
+
+CONFDESTDIR = /opt/etc
 DESTDIR = /opt/bin
-TITLE = poisonconvert
+CONFDIRNAME = PoisonConvert_Config-files
 SETTINGS_FILE = /opt/etc/PoisonConvert_Settings
+
+TITLE = poisonconvert
 ARCHIVE=$(TITLE).tar.gz
 
 .PHONY : all clean debug valgrind archive
@@ -38,10 +42,12 @@ archive :
 
 install:
 	install --mode=755 $(TITLE) $(DESTDIR)/
+	cp -r $(CONFDIRNAME)/ $(CONFDESTDIR)/$(CONFDIRNAME)/
 
 uninstall:
 	rm $(DESTDIR)/$(TITLE)
 	rm $(DESTDIR)/$(SETTINGS_FILE)
+	rm -r $(CONFDESTDIR)/$(CONFDIRNAME)
 
 -include $(wildcard ./*.d)
  
