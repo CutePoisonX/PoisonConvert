@@ -5,7 +5,7 @@ A little tool to batch-convert movies
 
 This progam was designed to batch-convert movies on a Synology-DiskStation.
 
-Installation guide:
+## Installation
 
 You can download and compile it on your system with:
 
@@ -20,14 +20,22 @@ You can download and compile it on your system with:
 Done :)
 (You can delete the source-files now)
 
+## How to use
+
 For further instructions please read the Wiki:
 https://github.com/CutePoisonX/PoisonConvert/wiki
 
-If you want to uninstall the program, you can either cd into the source directoy and:
+## Deinstallation
+If you want to uninstall the program, cd into the source directory and do:
+
 1) make uninstall
 
-o
+or perform the following steps:
+
 1) rm /opt/bin/poisonconvert
+
 2) rm /opt/etc/PoisonConvert_Settings
 
-I don´t take responsibility for any harm done by this program. 
+3) rm -r /opt/etc/PoisonConvert_Config-files
+
+and don't forget to remove the other Config files and the log files.
