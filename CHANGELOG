@@ -4,9 +4,11 @@ Version 1.4     1) Added recursive directory scanning for movies
 		4) Added config-file for the chromecast
 		5) Processed files get now only deleted when conversion was successful
 		   (this makes the "delete"-setting saver)
+		   The success is determined by comparing the duration and streams.
 		6) Failed files are reverted automatically (they do not get .old etc.
 	 	    appended)
 		7) Added makefile installer
+		8) Removed some bad "system" calls
 ------------------------------------------------------------------------------------------
 Version 1.3     1) Rewritten settings-behaviour (it is much easier now to add settings)
                 2) Added useful settings

@@ -37,7 +37,7 @@ public:
   string           checkPathToConfig();
   void          readImportantFiles(vector<string>& filenames) throw (FileReadException, 
                                                                       OpenFileException);
-  void          readProperties(string filename) throw (FileReadException, OpenFileException);
+  void          readProperties(string filename, string& duration) throw (FileReadException, OpenFileException);
   void          readPropsVideo(string line, unsigned int pos_start, string (&params)[5]);
   void          readPropsAudio(string line, unsigned int pos_start, string (&params)[5]);
   void          readPropsSub(string line, unsigned int pos_start, string& param0,

@@ -9,6 +9,7 @@
 #include "UserInterface.h"
 #include <sstream>
 #include <unistd.h>
+#include <stdio.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -144,12 +145,11 @@ int StartMode::executeCommand()
   string old_filename;
   string old_fileext;
 
-  string rename = "mv \"";
-  string delete_orig = "rm \"";
   string log_erase;
   
   unsigned int position = 0;
   unsigned int job = 0;
+  unsigned int failed_items = 0;
   
   if (vecman_.getVectorLen(SRCVIDEO) == 0)
   {
@@ -171,6 +171,7 @@ int StartMode::executeCommand()
     for(job = 0; job < important_files_.size(); job++)
     {
       int ffmpeg_response = 1;
+      bool conversion_success = false;
 
       string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1);
       logfile_ = "\" >> \"";
@@ -189,11 +190,12 @@ int StartMode::executeCommand()
       ui_.writeString(": ", false, "red");
       ui_.writeString(filename_without_path, true, "red");
       
-      gettingInfos(important_files_.at(job)); 
+      WriteLog("1. Analyzed File");
+      WriteLog("");
+      gettingInfos(important_files_.at(job), movie_duration_);
       
       applySettings();
       
-      rename = "mv \"";
       filename_noext = important_files_.at(job);
       position = filename_noext.find_last_of(".");
       old_fileext = filename_noext.substr(position, filename_noext.length() - position);
@@ -212,12 +214,7 @@ int StartMode::executeCommand()
          analyze_.getVectorLen(SRCSUB))
         old_filename.append("_ns");
       
-      rename.append(important_files_.at(job));
-      rename.append("\" \"");
-      rename.append(old_filename);
-      rename.append("\" 2>/dev/null");
-      
-      system(rename.c_str());
+      rename(important_files_.at(job).c_str(), old_filename.c_str());
       
       ffmpeg_input = "ffmpeg -i \"";
       ffmpeg_input.append(old_filename);
@@ -235,11 +232,11 @@ int StartMode::executeCommand()
       log_erase = logfile_;
       log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
       ffmpeg_input.append(log_erase);
-      ffmpeg_input.append(" ; echo $? > /opt/tmp/PoisonSearch_ffmpeg_status");
       
       ui_.writeString("  Converting...", true, "yellow");
       ffmpeg_response = system(ffmpeg_input.c_str());
-      if (ffmpeg_response == 0)
+      conversion_success = checkForConversionSuccess(ffmpeg_response, filename_noext);
+      if (conversion_success)
       {
         ui_.writeString("  Finished converting...", true, "yellow");
         if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
@@ -255,56 +252,78 @@ int StartMode::executeCommand()
         ui_.writeString("  Conversion failed...", true, "yellow");
 
         //delete new file (incomplete)
-        string new_file_delete = "rm \"" + filename_noext  + "\"  2>/dev/null";
-        system(new_file_delete.c_str());
+        remove(filename_noext.c_str());
         //revert .old... extension:
-        string rename_back = "mv \"" + old_filename + "\" \"" + important_files_.at(job) + "\" 2>/dev/null";
-        system(rename_back.c_str());
+        rename(old_filename.c_str(), important_files_.at(job).c_str());
+
+        WriteLog("");
+        WriteLog("C O N V E R S I O N    F A I L E D");
+        failed_items++;
       }
 
-      system("rm /opt/tmp/poisonXprobelist 2>/dev/null");
+      remove("/opt/tmp/poisonXprobelist");
 
-      
       maps_.clear();
       targets_.clear();
       nr_audio_targets_ = 0;
       nr_sub_targets_ = 0;
       nr_video_targets_ = 0;
+      prev_param_map_.clear();
 
       used_orig_id_.clear();    
       analyze_.clearEverything();
       ui_.writeString("Finished job ", false, "red");
       ui_.writeString(important_files_.at(job), true, "red");
       if(settings_.getSettingsParam(DELETESET) == "Yes" &&
-         ffmpeg_response == 0)
+         conversion_success)
       {
-        delete_orig.append(old_filename);
-        delete_orig.append("\" 2>/dev/null");
-        system(delete_orig.c_str());
-        delete_orig = "rm \"";
+        remove(old_filename.c_str());
       }
     }
     if(job != 0)
-      ui_.writeString("Done :)", true, "green");
+    {
+      if (failed_items == 0)
+      {
+        ui_.writeString("Done - all items succeeded! :)", true, "green");
+      }
+      else if (failed_items != job)
+      {
+        ui_.writeString("Done - ", false, "green");
+        ui_.writeNumber(failed_items, false, "green");
+        if (failed_items == 1)
+        {
+          ui_.writeString(" item failed! :/", true, "green");
+        }
+        else
+        {
+          ui_.writeString(" items failed! :/", true, "green");
+        }
+      }
+      else
+      {
+        ui_.writeString("Done - all items failed! :(", true, "green");
+      }
+    }
     else
+    {
       ui_.writeString("Nothing to be done :p", true, "green");
+    }
   }
 }
 
-int StartMode::gettingInfos(string& filename)
+int StartMode::gettingInfos(string const& filename, string& movie_duration)
 {
   string tmp_cmd = "ffprobe -print_format compact \"";
-
-  WriteLog("1. Analyzed File");
-  WriteLog("");
   
   tmp_cmd.append(filename);
   tmp_cmd.append("\" 2> /opt/tmp/poisonXprobelist");
 
   system(tmp_cmd.c_str());
-  fileman_.readProperties(filename);
+  fileman_.readProperties(filename, movie_duration);
 
-  WriteLogAnalyze();
+  WriteLogAnalyze(SRCVIDEO);
+  WriteLogAnalyze(SRCAUDIO);
+  WriteLogAnalyze(SRCSUB);
   
 }
 
@@ -378,6 +397,7 @@ int StartMode::applySettings()
           if (preferences[0] == true && preferences[1] == true && preferences[2] == true &&
               preferences[3] == true && preferences[4] == true)
           {
+
             maps_.append(" -map 0:");
             ss << ((priority_orig - 1) + correcture);
             maps_.append(ss.str());
@@ -404,7 +424,7 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
   string tmp_param;
   
   bool copy_whole_thing = false;
-  
+
   for (unsigned int target_nr = 1; target_nr <= target_vec_len; target_nr++)
   {
     tmp_target_id = vecman_.getTargetIDfromSource(priority_wish, identifier, target_nr);
@@ -417,8 +437,11 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
       {
         out_container_ = analyze_.sendSinglePreference(priority_orig, SRCVIDEO, 1); 
       }
+
+      prev_param_map_["Video"][1] = out_container_;
+
     }
-    if (identifier == SRCAUDIO) //Codec - Audio
+    else if (identifier == SRCAUDIO) //Codec - Audio
     {
       targets_.append(" -c:a:");
       ss << nr_audio_targets_;
@@ -426,12 +449,25 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
       ss.str("");
       targets_.append(" ");
       if (tmp_param == "copy")
+      {
         copy_whole_thing = true;
-      if(tmp_param == "-")
-        tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 1); 
+      }
+      else if(tmp_param == "-")
+      {
+        tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 1);
+      }
+
+      if (copy_whole_thing)
+      {
+        prev_param_map_["Audio"][1] = analyze_.sendSinglePreference(priority_orig, identifier, 1);
+      }
+      else
+      {
+        prev_param_map_["Audio"][1] = tmp_param;
+      }
       targets_.append(tmp_param);
     }
-    if (identifier == SRCSUB)
+    else if (identifier == SRCSUB)
     {
       targets_.append(" -c:s:");
       ss << nr_sub_targets_;
@@ -439,7 +475,16 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
       ss.str("");
       targets_.append(" ");
       targets_.append(tmp_param);
-      copy_whole_thing = true;
+      copy_whole_thing = true; //because subtitle has no other parameters!
+
+      if (tmp_param == "copy")
+      {
+        prev_param_map_["Subtitle"][1] = analyze_.sendSinglePreference(priority_orig, SRCSUB, 1);
+      }
+      else
+      {
+        prev_param_map_["Subtitle"][1] = tmp_param;
+      }
     }
     if (copy_whole_thing == false)
     {
@@ -452,7 +497,7 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
           targets_.append(" -c:v:");
           ss << nr_video_targets_;
         }
-        if (identifier == SRCAUDIO)
+        else if (identifier == SRCAUDIO)
         {
           targets_.append(" -ac:");
           ss << nr_audio_targets_;
@@ -462,96 +507,156 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
         targets_.append(" ");
         if (tmp_param == "copy")
           copy_whole_thing = true;
-        if((tmp_param == "copy" && identifier != SRCVIDEO) || tmp_param == "-" && identifier == SRCVIDEO)
+        if((tmp_param == "copy" && identifier != SRCVIDEO) || (tmp_param == "-" && identifier == SRCVIDEO))
         {
           tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 2);
         }
-        targets_.append(tmp_param);
-      }
-      if (copy_whole_thing == false)
-      {
-        //Bitrate at SRCVIDEO or Language at SRCAUDIO
-        tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 3);
-        if (tmp_param != "-")
-        {
-          if (identifier == SRCVIDEO)
-          {
-            targets_.append(" -b:v:");
-            ss << nr_video_targets_;
-            targets_.append(ss.str());
-            targets_.append(" ");
-          }
 
-          if (identifier == SRCAUDIO)
-          {
-            targets_.append(" -metadata:s:a:");
-            ss << nr_audio_targets_;
-            targets_.append(ss.str());
-            targets_.append(" language=");
-          }
-          ss.str("");
-          if (tmp_param == "copy")
-          {
-            tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 3);
-          }
-          targets_.append(tmp_param);
-        }
-        //resolution at SRCVIDEO or Bitrate at SRCAUDIO
-        tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 4);
-        if (tmp_param != "-")
+        targets_.append(tmp_param);
+
+        //fill the map:
+        if (tmp_param == "copy")
         {
-          if (identifier == SRCVIDEO)
-          {
-            targets_.append(" -s:v:");
-            ss << nr_video_targets_;
-          }
-          if (identifier == SRCAUDIO)
-          {
-          targets_.append(" -b:a:");
-          ss << nr_audio_targets_;
-          }
-          targets_.append(ss.str());
-          ss.str("");
-          targets_.append(" ");
-          if (tmp_param == "copy")
-          {
-            tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 4);
-          }
-          targets_.append(tmp_param);
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 2);
         }
-        
-        //fps at SRCVIDEO, sample rate at SRCAUDIO
-        tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 5);
-        if (tmp_param != "-")
+        if (identifier == SRCVIDEO)
         {
-          if (identifier == SRCVIDEO)
-          {
-            targets_.append(" -r:v:");
-            ss << nr_video_targets_;
-          }
-          if (identifier == SRCAUDIO)
-          {
-            targets_.append(" -ar:");
-            ss << nr_audio_targets_ + nr_video_targets_;
-          }
-          targets_.append(ss.str());
-          ss.str("");
-          targets_.append(" ");
-          if (tmp_param == "copy")
-          {
-            tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 5);
-          }
-          targets_.append(tmp_param);
+          prev_param_map_["Video"][2] = tmp_param;
+        }
+        else if (identifier == SRCAUDIO)
+        {
+          prev_param_map_["Audio"][2] = tmp_param;
         }
       }
     }
-    if(identifier == SRCVIDEO)
-      nr_video_targets_++;
-    if(identifier == SRCAUDIO)
-      nr_audio_targets_++;
-    if(identifier == SRCSUB)
-      nr_sub_targets_++;
+    if (copy_whole_thing == false)
+    {
+      //Bitrate at SRCVIDEO or Language at SRCAUDIO
+      tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 3);
+      if (tmp_param != "-")
+      {
+        if (identifier == SRCVIDEO)
+        {
+          targets_.append(" -b:v:");
+          ss << nr_video_targets_;
+          targets_.append(ss.str());
+          targets_.append(" ");
+        }
+        else if (identifier == SRCAUDIO)
+        {
+          targets_.append(" -metadata:s:a:");
+          ss << nr_audio_targets_;
+          targets_.append(ss.str());
+          targets_.append(" language=");
+        }
+        ss.str("");
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 3);
+        }
+
+        targets_.append(tmp_param);
+
+        //fill the map:
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 3);
+        }
+        if (identifier == SRCVIDEO)
+        {
+          prev_param_map_["Video"][3] = tmp_param;
+        }
+        else if (identifier == SRCAUDIO)
+        {
+          prev_param_map_["Audio"][3] = tmp_param;
+        }
+      }
+
+      //resolution at SRCVIDEO or Bitrate at SRCAUDIO
+      tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 4);
+      if (tmp_param != "-")
+      {
+        if (identifier == SRCVIDEO)
+        {
+          targets_.append(" -s:v:");
+          ss << nr_video_targets_;
+        }
+        if (identifier == SRCAUDIO)
+        {
+          targets_.append(" -b:a:");
+          ss << nr_audio_targets_;
+        }
+        targets_.append(ss.str());
+        ss.str("");
+        targets_.append(" ");
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 4);
+        }
+        targets_.append(tmp_param);
+
+        //fill the map:
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 4);
+        }
+        if (identifier == SRCVIDEO)
+        {
+          prev_param_map_["Video"][4] = tmp_param;
+        }
+        else if (identifier == SRCAUDIO)
+        {
+          prev_param_map_["Audio"][4] = tmp_param;
+        }
+      }
+
+      //fps at SRCVIDEO, sample rate at SRCAUDIO
+      tmp_param = vecman_.sendSinglePreference(tmp_target_id, target_identifier, 5);
+      if (tmp_param != "-")
+      {
+        if (identifier == SRCVIDEO)
+        {
+          targets_.append(" -r:v:");
+          ss << nr_video_targets_;
+        }
+        if (identifier == SRCAUDIO)
+        {
+          targets_.append(" -ar:");
+          ss << nr_audio_targets_ + nr_video_targets_;
+        }
+        targets_.append(ss.str());
+        ss.str("");
+        targets_.append(" ");
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 5);
+        }
+        targets_.append(tmp_param);
+        
+        //fill the map:
+        if (tmp_param == "copy")
+        {
+          tmp_param = analyze_.sendSinglePreference(priority_orig, identifier, 5);
+        }
+        if (identifier == SRCVIDEO)
+        {
+          prev_param_map_["Video"][5] = tmp_param;
+        }
+        else if (identifier == SRCAUDIO)
+        {
+          prev_param_map_["Audio"][5] = tmp_param;
+        }
+      }
+    }
   }
+
+  if(identifier == SRCVIDEO)
+    nr_video_targets_++;
+  if(identifier == SRCAUDIO)
+    nr_audio_targets_++;
+  if(identifier == SRCSUB)
+    nr_sub_targets_++;
+
 }
 
 void StartMode::optimizeFile(string& filename, string erase_log)
@@ -559,8 +664,6 @@ void StartMode::optimizeFile(string& filename, string erase_log)
   string new_filename = "\"";
   string filename_no_ext;
   string qt_start = "qt-faststart \"";
-  string remove = "rm \"";
-  string rename = "mv ";
   unsigned int position;
   
   ui_.writeString("  Started optimizing...", true, "yellow");
@@ -582,16 +685,8 @@ void StartMode::optimizeFile(string& filename, string erase_log)
 
   system(qt_start.c_str());
   
-  remove.append(filename);
-  remove.append("\" 2>/dev/null");
-  system(remove.c_str());
-  
-  rename.append(new_filename);
-  rename.append("\" \"");
-  rename.append(filename);
-  rename.append("\" 2>/dev/null");
-
-  system(rename.c_str());
+  remove(filename.c_str());
+  rename(new_filename.c_str(), filename.c_str());
   
   ui_.writeString("  Finished optimizing...", true, "yellow");
 }
@@ -620,71 +715,79 @@ void StartMode::WriteLogHeader(int job)
   WriteLog("");
 }
 
-void StartMode::WriteLogAnalyze()
+void StartMode::WriteLogAnalyze(unsigned int identifier)
 {
   string output;
-  string tmp_param[5] = { "   Video:     Container       ",
-                          "              Codec           ",
-                          "              Bitrate         ",
-                          "              Resolution      ",
-                          "              Fps             "};
+  string tmp_param[5] = {""};
   
-  for(int i=0; i<5; i++)
+  if (identifier == SRCVIDEO)
   {
-    try
-    {
-      output = tmp_param[i];
-      output.append(analyze_.sendSinglePreference(1, SRCVIDEO, i + 1));
-      WriteLog(output);
-    }    
-    catch (exception)
-    {
-      output.append("-");
-      WriteLog(output);
-    }
-  }
-  
-  WriteLog("");
-  tmp_param[0] = "   Audio:     Codec           ";
-  tmp_param[1] = "              Channels        ";
-  tmp_param[2] = "              Language        ";
-  tmp_param[3] = "              Bitrate         ";
-  tmp_param[4] = "              Sample Rate     ";
-  
-  for (int i = 0; i < 5; i++)
-  {
-    try
-    {
-      output = tmp_param[i];
-      output.append(analyze_.sendSinglePreference(1, SRCAUDIO, i + 1));
-      WriteLog(output);
-    }
-    catch(exception)
-    {
-      output.append("-");
-      WriteLog(output);
-    }
-  }
+    tmp_param[0] = "   Video:     Container       ";
+    tmp_param[1] = "              Codec           ";
+    tmp_param[2] = "              Bitrate         ";
+    tmp_param[3] = "              Resolution      ";
+    tmp_param[4] = "              Fps             ";
 
-  WriteLog("");
-  tmp_param[0] = "   Subtitles: Codec           ";
-  tmp_param[1] = "              Language        ";
-  
-  for(int i=0; i<2; i++)
-  {
-    try
+    for(int i=0; i<5; i++)
     {
-      output = tmp_param[i];
-      output.append(analyze_.sendSinglePreference(1, SRCSUB, i + 1));
-      WriteLog(output);
+      try
+      {
+        output = tmp_param[i];
+        output.append(analyze_.sendSinglePreference(1, SRCVIDEO, i + 1));
+        WriteLog(output);
+      }
+      catch (exception)
+      {
+        output.append("-");
+        WriteLog(output);
+      }
     }
-    catch(exception)
+  }
+  else if (identifier == SRCAUDIO)
+  {
+    tmp_param[0] = "   Audio:     Codec           ";
+    tmp_param[1] = "              Channels        ";
+    tmp_param[2] = "              Language        ";
+    tmp_param[3] = "              Bitrate         ";
+    tmp_param[4] = "              Sample Rate     ";
+
+    for (int i = 0; i < 5; i++)
     {
-      output.append("-");
-      WriteLog(output);
+      try
+      {
+        output = tmp_param[i];
+        output.append(analyze_.sendSinglePreference(1, SRCAUDIO, i + 1));
+        WriteLog(output);
+      }
+      catch(exception)
+      {
+        output.append("-");
+        WriteLog(output);
+      }
+    }
+  }
+  else if (identifier == SRCSUB)
+  {
+    tmp_param[0] = "   Subtitles: Codec           ";
+    tmp_param[1] = "              Language        ";
+
+    for(int i=0; i<2; i++)
+    {
+      try
+      {
+        output = tmp_param[i];
+        output.append(analyze_.sendSinglePreference(1, SRCSUB, i + 1));
+        WriteLog(output);
+      }
+      catch(exception)
+      {
+        output.append("-");
+        WriteLog(output);
+      }
     }
   }
   WriteLog("");
+
 }
 
 void StartMode::WriteLogFfmpeg(string ffmpeg_cmd)
@@ -730,4 +833,79 @@ void StartMode::MoveFile(string filename_full_path)
   move_file.append("\" 2>/dev/null");
   
   system(move_file.c_str());
+}
+
+bool StartMode::checkForConversionSuccess(int ffmpeg_response,
+                                          string const& path_to_file)
+{
+  string new_movie_duration;
+
+  //checking response of ffmpeg:
+  if (ffmpeg_response != 0)
+  {
+    return false;
+  }
+
+  WriteLog("");
+  WriteLog("4. Analyzed processed file");
+  WriteLog("");
+  analyze_.clearEverything();
+  gettingInfos(path_to_file, new_movie_duration);
+
+  //check duration:
+  if (movie_duration_ != new_movie_duration)
+  {
+    return false;
+  }
+
+  //check stream parameter:
+  for(int i=0; i<5; i++)
+  {
+    try
+    {
+      //this will throw if param is "-":
+      string should_output = analyze_.sendSinglePreference(1, SRCVIDEO, i + 1);
+      if (prev_param_map_.at("Video").at(i+1) != should_output)
+      {
+        return false;
+      }
+    }
+    catch (exception)
+    {
+
+    }
+  }
+  for(int i=0; i<5; i++)
+  {
+    try
+    {
+      //this will throw if param is "-":
+      string should_output = analyze_.sendSinglePreference(1, SRCAUDIO, i + 1);
+      if (prev_param_map_.at("Audio").at(i+1) != should_output)
+      {
+        return false;
+      }
+    }
+    catch (exception)
+    {
+
+    }
+  }
+
+  try
+  {
+    //this will throw if param is "-":
+    string should_output = analyze_.sendSinglePreference(1, SRCSUB, 1);
+    if (prev_param_map_.at("Subtitle").at(1) != should_output)
+    {
+      return false;
+    }
+  }
+  catch (exception)
+  {
+
+  }
+
+  WriteLog("C O N V E R S I O N    S U C C E E D E D");
+  return true;
 }

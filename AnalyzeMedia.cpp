@@ -27,7 +27,7 @@ int AnalyzeMedia::saveToVector(string& param1, string& param2, string& param3,
                                string& param4, string& param5, unsigned int priority,
                                unsigned int identifier)
 {
-    vector<StreamPreference*>& tmp = getVector(identifier);
+  vector<StreamPreference*>& tmp = getVector(identifier);
     
   tmp.push_back(new StreamPreference(param1, param2, param3, param4, param5));
 }

@@ -397,12 +397,12 @@ void FileManager::readImportantFiles(vector<string>& filenames) throw (FileReadE
   readfile.close();
 }
 
-void FileManager::readProperties(string filename) throw (FileReadException, OpenFileException)
+void FileManager::readProperties(string filename, string& duration) throw (FileReadException, OpenFileException)
 {
   ifstream readfile;
   string line;
   string params[5] = {"poison"};
-  
+
   unsigned int position = 0;
   unsigned int position_two = 0;
   unsigned int position_video = 0;
@@ -417,7 +417,29 @@ void FileManager::readProperties(string filename) throw (FileReadException, Open
   do
   {
     getline(readfile, line, '\n');
-    if (line.find("Stream", 0) != string::npos)
+
+    if (line.find("Duration", 0) != string::npos)
+    {
+      unsigned int duration_pos_beg = line.find_first_of(":") + 2;
+      unsigned int duration_pos_end = line.find_first_of(",");
+      string tmp_duration;
+
+      line = line.substr(duration_pos_beg, duration_pos_end - duration_pos_beg);
+      if (line.find(".") != string::npos) //we don't need to compare fractions of seconds ...
+      {
+        tmp_duration = line.substr(0, line.find("."));
+      }
+      else
+      {
+        tmp_duration = line;
+      }
+
+      if (tmp_duration.empty() == false)
+      {
+        duration = tmp_duration;
+      }
+    }
+    else if (line.find("Stream", 0) != string::npos)
     {
       position = line.find("): ", 0);
       position = position + 3;

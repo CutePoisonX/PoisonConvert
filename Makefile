@@ -46,7 +46,7 @@ install:
 
 uninstall:
 	rm $(DESTDIR)/$(TITLE)
-	rm $(DESTDIR)/$(SETTINGS_FILE)
+	rm $(SETTINGS_FILE)
 	rm -r $(CONFDESTDIR)/$(CONFDIRNAME)
 
 -include $(wildcard ./*.d)
