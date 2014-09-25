@@ -1,9 +1,21 @@
-/* 
- * File:   ConfigMode.cpp
- * Author: CutePoisonX
- * 
- * Created on 04. Februar 2013, 14:34
- */
+//
+//    Copyright 2014 CutePoisonX (CutePoisonXI@gmail.com)
+//
+//    This file is part of PoisonConvert.
+//
+//    PoisonConvert is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    PoisonConvert is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with PoisonConvert.  If not, see <http://www.gnu.org/licenses/>.
+//
 
 #include "ConfigMode.h"
 #include "UserInterface.h"
@@ -1559,10 +1571,10 @@ int ConfigMode::listRule(string& param_prompt1, string& param_prompt2,
       ui_.writeString(" is ");
       ui_.writeString(param1_);
     }
+    ui_.writeString(", ");
   }
   if (param2_ != "-")
   {
-    ui_.writeString(", ");
     ui_.writeString(param_prompt2);
     if (param2_.compare(0, 3, "NOT") == 0)
     {
@@ -1718,10 +1730,10 @@ int ConfigMode::deleteConfig()
         ui_.writeString("  Do you want to delete an output-stream or a rule?", true);
         ui_.writeString("  [");
         ui_.writeString("rule", false, "yellow");
-        ui_.writeString("]   - create new rule", true); //OK
+        ui_.writeString("]   - delete rule", true);
         ui_.writeString("  [");
         ui_.writeString("target", false, "yellow");
-        ui_.writeString("] - create new output-stream", true);
+        ui_.writeString("] - delete output-stream", true);
         ui_.writeString("  [");
         ui_.writeString("exit", false, "yellow");
         ui_.writeString("]   - go back", true);

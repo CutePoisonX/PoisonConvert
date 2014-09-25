@@ -3,7 +3,13 @@ CXXFLAGS=-c -Wall -g
 LDFLAGS=
 SOURCES = $(wildcard *.cpp)
 OBJECTS = ${SOURCES:.cpp=.o}
-TITLE= poisonconvert
+
+CONFDESTDIR = /opt/etc
+DESTDIR = /opt/bin
+CONFDIRNAME = PoisonConvert_Config-files
+SETTINGS_FILE = /opt/etc/PoisonConvert_Settings
+
+TITLE = poisonconvert
 ARCHIVE=$(TITLE).tar.gz
 
 .PHONY : all clean debug valgrind archive
@@ -33,6 +39,15 @@ valgrind : $(TITLE)
 
 archive :
 	tar cfz $(ARCHIVE) --ignore-failed-read *.cpp *.h *.pdf Makefile
+
+install:
+	install --mode=755 $(TITLE) $(DESTDIR)/
+	cp -r $(CONFDIRNAME)/ $(CONFDESTDIR)/$(CONFDIRNAME)/
+
+uninstall:
+	rm $(DESTDIR)/$(TITLE)
+	rm $(SETTINGS_FILE)
+	rm -r $(CONFDESTDIR)/$(CONFDIRNAME)
 
 -include $(wildcard ./*.d)
  

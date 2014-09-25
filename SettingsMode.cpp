@@ -1,9 +1,21 @@
-/* 
- * File:   SettingsMode.cpp
- * Author: CutePoisonX
- * 
- * Created on 08. Februar 2013, 09:40
- */
+//
+//    Copyright 2014 CutePoisonX (CutePoisonXI@gmail.com)
+//
+//    This file is part of PoisonConvert.
+//
+//    PoisonConvert is free software: you can redistribute it and/or modify
+//    it under the terms of the GNU General Public License as published by
+//    the Free Software Foundation, either version 3 of the License, or
+//    (at your option) any later version.
+//
+//    PoisonConvert is distributed in the hope that it will be useful,
+//    but WITHOUT ANY WARRANTY; without even the implied warranty of
+//    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+//    GNU General Public License for more details.
+//
+//    You should have received a copy of the GNU General Public License
+//    along with PoisonConvert.  If not, see <http://www.gnu.org/licenses/>.
+//
 
 #include "SettingsMode.h"
 #include "UserInterface.h"
@@ -16,13 +28,13 @@ SettingsMode::SettingsMode(UserInterface& ui)
   //----------------------------------------------------------------------------
   //initialize settings
   settings_vector_.push_back(new Settings(ui, "config-file", "Selecting filename of config - file", 
-  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "Config"));
+  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "EmptyConfig"));
   
   settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
-  "Please enter the path to the configuration-file", ""));
+  "Please enter the path to the configuration-file", "/opt/etc/PoisonConvert_Config-files/"));
     
   settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
-  "Do you want to delete the original file after the successful conversion? NOT RECOMMENDET ([y/n])", "No"));
+  "Do you want to delete the original file after the successful conversion ([y/n])?", "No"));
   
   settings_vector_.push_back(new YesNoSetting(ui, "optimize", "Optimize file for streaming (mp4/m4v/mov only)",
   "Do you want to optimize file for streaming (mov/mp4/m4v only , [y/n])?", "No"));
