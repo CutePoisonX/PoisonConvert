@@ -14,7 +14,6 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-#include <iostream>
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
                      SettingsMode& settings)
@@ -78,7 +77,8 @@ int StartMode::listDirectory(string dir, vector<string>& files_of_interest)
 
     for(unsigned int k = 0; k < vec_size; k++)
     {
-      if (path_ext == important_files_.at(k))
+      if ((path_ext == important_files_.at(k) ||
+          important_files_.at(k) == "-") && path_ext != "old")
       {
         ui_.writeString("Found file: " + path, true);
         files_of_interest.push_back(path);
@@ -223,6 +223,10 @@ int StartMode::executeCommand()
       ffmpeg_input.append(targets_);
       ffmpeg_input.append(" -strict -2 -y \"");
       
+      if (out_container_ == "-")
+      {
+        out_container_ = important_files_.at(job).substr(0, important_files_.at(job).find_last_of("."));
+      }
       filename_noext.append(out_container_);
       ffmpeg_input.append(filename_noext);
       

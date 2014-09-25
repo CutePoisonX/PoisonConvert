@@ -1,7 +1,7 @@
-/* 
+/*
  * File:   AnalyzeMedia.cpp
  * Author: CutePoisonX
- * 
+ *
  * Created on 10. Februar 2013, 10:14
  */
 

@@ -300,9 +300,7 @@ int ConfigMode::createRuleVideo()
     }
     if (param1_ == "")
       ui_.writeString("Please enter something.", true);
-    else if (param1_ == "-")
-      ui_.writeString("Value \"any\" is not supported for the container property. Please enter a valid container.", true);
-  } while (param1_ == "" || param1_ == "-" || container_not == true);
+  } while (param1_ == "" || container_not == true);
 
   do
   {
@@ -1561,10 +1559,10 @@ int ConfigMode::listRule(string& param_prompt1, string& param_prompt2,
       ui_.writeString(" is ");
       ui_.writeString(param1_);
     }
+    ui_.writeString(", ");
   }
   if (param2_ != "-")
   {
-    ui_.writeString(", ");
     ui_.writeString(param_prompt2);
     if (param2_.compare(0, 3, "NOT") == 0)
     {
