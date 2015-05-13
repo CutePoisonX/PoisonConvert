@@ -299,23 +299,21 @@ int ConfigMode::createRuleVideo()
 
   do
   {
+  	container_not = false;
     ui_.writeString("Container: ");
     param1_ = ui_.readStringNoCapitalize(false);
-    if (param1_.compare(0, 3, "not") == 0)
+ 		if (param1_.compare(0, 3, "not") == 0)
     {
       container_not = true;
-      ui_.writeString("You can not place a 'not' before a container.", true);
-    }
-    else
-    {
-      container_not = false;
+      param1_.erase(0, 3);
     }
     if (param1_ == "")
       ui_.writeString("Please enter something.", true);
-  } while (param1_ == "" || container_not == true);
+  } while (param1_ == "");
 
   do
   {
+  	codec_not = false;
     ui_.writeString("Codec: ");
     param2_ = ui_.readStringNoCapitalize(false);
     if (param2_.compare(0, 3, "not") == 0)
@@ -329,6 +327,7 @@ int ConfigMode::createRuleVideo()
   
   do
   {
+  	bitrate_not = false;
     ui_.writeString("Bitrate (b/s): ");
     param3_ = ui_.readStringNoCapitalize(false);
     if (param3_.compare(0, 3, "not") == 0)
@@ -345,6 +344,7 @@ int ConfigMode::createRuleVideo()
            param3_ != "-");
   do
   {
+  	resolution_not = false;
     ui_.writeString("Resolution: Width ");
     res_width = ui_.readStringNoCapitalize(false);
     if (res_width.compare(0, 3, "not") == 0)
@@ -389,6 +389,7 @@ int ConfigMode::createRuleVideo()
 
   do
   {
+  	fps_not = false;
     ui_.writeString("Frames per second: ");
     param5_ = ui_.readStringNoCapitalize(false);
     if (param5_.compare(0, 3, "not") == 0)
@@ -418,6 +419,7 @@ int ConfigMode::createRuleAudio()
   //Codec
   do
   {
+  	codec_not = false;
     ui_.writeString("Codec: ");
     param1_ = ui_.readStringNoCapitalize(false);
     if (param1_.compare(0, 3, "not") == 0)
@@ -432,6 +434,7 @@ int ConfigMode::createRuleAudio()
   //Channels
   do
   {
+  	channels_not = false;
     ui_.writeString("Channels: ");
     param2_ = ui_.readStringNoCapitalize(false);
     if (param2_.compare(0, 3, "not") == 0)
@@ -439,13 +442,18 @@ int ConfigMode::createRuleAudio()
       channels_not = true;
       param2_.erase(0, 3);
     }
+    if (param2_.find_first_not_of("0123456789-") != std::string::npos)
+    {
+    	ui_.writeString("Please enter only digits. If you want to have stereo channels, write 2. If you want to have 5.1, write 6", true);
+    }
     if (param2_ == "")
       ui_.writeString("Please enter something.", true);
-  } while (param2_ == "");
+  } while (param2_ == "" || param2_.find_first_not_of("0123456789-") != std::string::npos);
   
   //Language
   do
   {
+  	language_not = false;
     ui_.writeString("Language: ");
     param3_ = ui_.readStringNoCapitalize(false);
     if (param3_.compare(0, 3, "not") == 0)
@@ -460,6 +468,7 @@ int ConfigMode::createRuleAudio()
   //Bitrate
   do
   {
+  	bitrate_not = false;
     ui_.writeString("Bitrate (b/s): ");
     param4_ = ui_.readStringNoCapitalize(false);
     if (param4_.compare(0, 3, "not") == 0)
@@ -478,6 +487,7 @@ int ConfigMode::createRuleAudio()
   //Sample Rate
   do
   {
+  	sample_rate_not = false;
     ui_.writeString("Sample Rate (Hz): ");
     param5_ = ui_.readStringNoCapitalize(false);
     if (param5_.compare(0, 3, "not") == 0)
@@ -508,6 +518,7 @@ int ConfigMode::createRuleAudio()
 
     do
   {
+  	codec_not = false;
     ui_.writeString("Codec: ");
     param1_ = ui_.readStringNoCapitalize(false);
     if (param1_.compare(0, 3, "not") == 0)
@@ -522,6 +533,7 @@ int ConfigMode::createRuleAudio()
   //Language
   do
   {
+  	language_not = false;
     ui_.writeString("Language: ");
     param2_ = ui_.readStringNoCapitalize(false);
     if (param2_.compare(0, 3, "not") == 0)
@@ -1195,23 +1207,6 @@ int ConfigMode::createOutputSub()
   param3_ = "OFF";
   param4_ = "OFF";
   param5_ = "OFF";
-
-  //Copy or not? ///////////////////////////////Old Verrsion
-//    do
-//  {
-//    ui_.writeString("Copy subtitle stream? [y/n]", true);
-//    input_ = ui_.readStringNoCapitalize(false);
-//    if (input_ == "y")
-//    {
-//      param1_ = "copy";
-//    } else if (input_ == "n")
-//    {
-//      return -1;
-//    } else
-//    {
-//      ui_.writeString("Plaese enter [y] for 'yes' and [n] for 'no'!", true);
-//    }
-//  } while (input_ != "y");
 
   do
   {

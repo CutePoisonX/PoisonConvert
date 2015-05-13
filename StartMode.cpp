@@ -89,11 +89,25 @@ int StartMode::listDirectory(string dir, vector<string>& files_of_interest)
 
     for(unsigned int k = 0; k < vec_size; k++)
     {
-      if ((path_ext == important_files_.at(k) ||
-          important_files_.at(k) == "-") && path_ext != "old")
+      if ((path_ext == important_files_.at(k) || //matches exactly
+          important_files_.at(k) == "-" || //all fileextensions match
+          (important_files_.at(k).compare(0,3, "not") && important_files_.at(k).compare(3, string::npos, path_ext))) //matches when filextension is "not"...
+          && path_ext != "old") //extension "old" is never a match
       {
-        ui_.writeString("Found file: " + path, true);
-        files_of_interest.push_back(path);
+        bool add_file = true;
+        for(unsigned int important_file_nr = 0; important_file_nr < vec_size; important_file_nr++) //check if file is already added
+        {
+        	if (important_files_.at(important_file_nr) == path)
+        	{
+        		add_file = false;
+        		break;
+        	}
+        }
+        if (add_file == true)
+        {
+        	ui_.writeString("Found file: " + path, true);
+        	files_of_interest.push_back(path);
+        }
         break;
       }
     }
@@ -329,10 +343,10 @@ int StartMode::executeCommand()
 
 int StartMode::gettingInfos(string const& filename, string& movie_duration)
 {
-  string tmp_cmd = "ffprobe -print_format compact \"";
+  string tmp_cmd = "ffprobe -print_format compact -show_streams \"";
   
   tmp_cmd.append(filename);
-  tmp_cmd.append("\" 2> /opt/tmp/poisonXprobelist");
+  tmp_cmd.append("\" &> /opt/tmp/poisonXprobelist");
 
   system(tmp_cmd.c_str());
   fileman_.readProperties(filename, movie_duration);
@@ -744,20 +758,23 @@ void StartMode::WriteLogAnalyze(unsigned int identifier)
     tmp_param[3] = "              Resolution      ";
     tmp_param[4] = "              Fps             ";
 
-    for(int i=0; i<5; i++)
-    {
-      try
-      {
-        output = tmp_param[i];
-        output.append(analyze_.sendSinglePreference(1, SRCVIDEO, i + 1));
-        WriteLog(output);
-      }
-      catch (exception)
-      {
-        output.append("-");
-        WriteLog(output);
-      }
-    }
+		for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCVIDEO); stream++)
+		{
+	    for(int i=0; i<5; i++)
+	    {
+	      try
+	      {
+	        output = tmp_param[i];
+	        output.append(analyze_.sendSinglePreference(stream, SRCVIDEO, i + 1));
+	        WriteLog(output);
+	      }
+	      catch (exception)
+	      {
+	        output.append("-");
+	        WriteLog(output);
+	      }
+	    }
+		}
   }
   else if (identifier == SRCAUDIO)
   {
@@ -766,33 +783,38 @@ void StartMode::WriteLogAnalyze(unsigned int identifier)
     tmp_param[2] = "              Language        ";
     tmp_param[3] = "              Bitrate         ";
     tmp_param[4] = "              Sample Rate     ";
-
-    for (int i = 0; i < 5; i++)
-    {
-      try
-      {
-        output = tmp_param[i];
-        output.append(analyze_.sendSinglePreference(1, SRCAUDIO, i + 1));
-        WriteLog(output);
-      }
-      catch(exception)
-      {
-        output.append("-");
-        WriteLog(output);
-      }
-    }
+    
+		for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCAUDIO); stream++)
+		{
+	    for (int i = 0; i < 5; i++)
+	    {
+	      try
+	      {
+	        output = tmp_param[i];
+	        output.append(analyze_.sendSinglePreference(stream, SRCAUDIO, i + 1));
+	        WriteLog(output);
+	      }
+	      catch(exception)
+	      {
+	        output.append("-");
+	        WriteLog(output);
+	      }
+	    }
+		}
   }
   else if (identifier == SRCSUB)
   {
-    tmp_param[0] = "   Subtitles: Codec           ";
+    tmp_param[0] = "   Subtitle:  Codec           ";
     tmp_param[1] = "              Language        ";
 
-    for(int i=0; i<2; i++)
-    {
+	for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCSUB); stream++)
+	{
+	  for(int i=0; i<2; i++)
+	  {
       try
       {
         output = tmp_param[i];
-        output.append(analyze_.sendSinglePreference(1, SRCSUB, i + 1));
+        output.append(analyze_.sendSinglePreference(stream, SRCSUB, i + 1));
         WriteLog(output);
       }
       catch(exception)
@@ -800,7 +822,9 @@ void StartMode::WriteLogAnalyze(unsigned int identifier)
         output.append("-");
         WriteLog(output);
       }
-    }
+	  }
+	}
+    
   }
   WriteLog("");
 
@@ -833,7 +857,6 @@ void StartMode::WriteLogOptimize()
   WriteLog("");
   WriteLog("4. qt-faststart output");
   WriteLog("");
-  
 }
 
 void StartMode::MoveFile(string filename_full_path)
@@ -875,52 +898,65 @@ bool StartMode::checkForConversionSuccess(int ffmpeg_response,
   }
 
   //check stream parameter:
-  for(int i=0; i<5; i++)
-  {
-    try
-    {
-      //this will throw if param is "-":
-      string should_output = analyze_.sendSinglePreference(1, SRCVIDEO, i + 1);
-      if (prev_param_map_.at("Video").at(i+1) != should_output)
-      {
-        return false;
-      }
-    }
-    catch (exception)
-    {
+	for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCVIDEO); stream++)
+	{
+		for(int i=0; i<2; i++)
+	  {
+	    try
+	    {
+	      //this will throw if param is "-":
+	      string should_output = analyze_.sendSinglePreference(stream, SRCVIDEO, i + 1);
+	      if (prev_param_map_.at("Video").at(i+1) != should_output)
+	      {
+	        return false;
+	      }
+	    }
+	    catch (exception)
+	    {
+	
+	    }
+	  }
+	}
+	
+	for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCAUDIO); stream++)
+	{
+	  for(int i=0; i<5; i++)
+	  {
+	    try
+	    {
+	      //this will throw if param is "-":
+	      string should_output = analyze_.sendSinglePreference(stream, SRCAUDIO, i + 1);
+	      if (prev_param_map_.at("Audio").at(i+1) != should_output)
+	      {
+	        return false;
+	      }
+	    }
+	    catch (exception)
+	    {
+	
+	    }
+	  }
+	}
 
-    }
-  }
-  for(int i=0; i<5; i++)
-  {
-    try
-    {
-      //this will throw if param is "-":
-      string should_output = analyze_.sendSinglePreference(1, SRCAUDIO, i + 1);
-      if (prev_param_map_.at("Audio").at(i+1) != should_output)
-      {
-        return false;
-      }
-    }
-    catch (exception)
-    {
-
-    }
-  }
-
-  try
-  {
-    //this will throw if param is "-":
-    string should_output = analyze_.sendSinglePreference(1, SRCSUB, 1);
-    if (prev_param_map_.at("Subtitle").at(1) != should_output)
-    {
-      return false;
-    }
-  }
-  catch (exception)
-  {
-
-  }
+	for(unsigned int stream=1; stream<=analyze_.getVectorLength(SRCSUB); stream++)
+	{
+	  for(int i=0; i<2; i++)
+	  {
+		  try
+		  {
+		    //this will throw if param is "-":
+		    string should_output = analyze_.sendSinglePreference(stream, SRCSUB, 1);
+		    if (prev_param_map_.at("Subtitle").at(1) != should_output)
+		    {
+		      return false;
+		    }
+		  }
+		  catch (exception)
+		  {
+		
+		  }
+	  }
+	}
 
   WriteLog("C O N V E R S I O N    S U C C E E D E D");
   return true;

@@ -24,7 +24,7 @@
 #include "Settings.h"
 #include <sstream>
 #include <vector>
-//#include<iostream>
+#include <math.h>
 
 using namespace std;
 
@@ -352,6 +352,21 @@ void FileManager::readPrefs(ifstream& readfile, unsigned int identifier,
         }
       }
     }
+    
+    //in order to be compatible to older config files (versions <1.4.1), where
+    //the parameter "audio channels" can have a label like stereo or 5.1, we 
+    //convert the label to a number ...
+    if (identifier == SRCAUDIO)
+    {
+    	if (params[1] == "stereo")
+		  {
+		  	params[1] = "2";
+		  } else if (params[1] == "5.1")
+		  {
+		  	params[1] = "6";
+		  }
+    }
+
     vec_man_.saveToVector(params[0], params[1], params[2], params[3], params[4],
                           priority, identifier);
     if (identifier <= SRCSUB)
@@ -413,11 +428,8 @@ void FileManager::readProperties(string filename, string& duration) throw (FileR
 {
   ifstream readfile;
   string line;
+  string outter_bitrate;
   string params[5] = {"poison"};
-
-  unsigned int position = 0;
-  unsigned int position_two = 0;
-  unsigned int position_video = 0;
   
   readfile.open("/opt/tmp/poisonXprobelist");
   if (readfile.is_open() == false)
@@ -436,7 +448,7 @@ void FileManager::readProperties(string filename, string& duration) throw (FileR
       unsigned int duration_pos_end = line.find_first_of(",");
       string tmp_duration;
 
-      line = line.substr(duration_pos_beg, duration_pos_end - duration_pos_beg);
+      tmp_duration = line.substr(duration_pos_beg, duration_pos_end - duration_pos_beg);
       if (line.find(".") != string::npos) //we don't need to compare fractions of seconds ...
       {
         tmp_duration = line.substr(0, line.find("."));
@@ -450,192 +462,157 @@ void FileManager::readProperties(string filename, string& duration) throw (FileR
       {
         duration = tmp_duration;
       }
+      
+      //getting bitrate -> unfortunately not within the method readPropsVideo(...)
+      outter_bitrate = line.substr(line.find("bitrate: ") + 9); //Note: this happens before we analyze any stream
     }
-    else if (line.find("Stream", 0) != string::npos)
+    else if (line.substr(0, 6) == "stream") //note: 6 is the length of "stream" -> if true, the line begins with "stream"
     {
-      position = line.find("): ", 0);
-      position = position + 3;
-      position_two = line.find(":", position);
+      unsigned int position = line.find("codec_type=", 0);
+      position = position + 11; //note: 11 is the length of "codec_type="
+      unsigned int position_two = line.find("|", position);
 
-      position_video = line.find("Video:", 0) + 4; //Going to the Codec param (important for video-> no language needed)
+      string type_of_stream = line.substr(position, position_two - position);
 
-      if (line.find("Video") != string::npos)
+      if (type_of_stream == "video") //Important: we can not get the bitrate out of the "video" section -> it is analyzed above in the duration section!
       {
         position = filename.find_last_of(".");
         params[0] = filename.substr(position + 1, filename.length() - position);
-        readPropsVideo(line, position_video + 3, params);
+        params[2] = outter_bitrate;
+        readPropsVideo(line, params);
+        
         analyze_.saveToVector(params[0], params[1], params[2], params[3],
                               params[4], 0, SRCVIDEO);
-//        for(unsigned int nr = 0; nr < 5; nr++) //Test purposes only
-//        {
-//            cout << "param " << nr << " = " << params[nr] << endl;
-//        }
         
-
-      }else if (line.find("Audio") != string::npos)
+      } else if (type_of_stream == "audio")
       {
-        position_two = line.find("(", 0);
-        readPropsAudio(line, position_two, params);
+        readPropsAudio(line, params);
         analyze_.saveToVector(params[0], params[1], params[2], params[3],
                               params[4], 0, SRCAUDIO);
-//        for(unsigned int nr = 0; nr < 5; nr++) //Test purposes only
-//        {
-//            cout << "param " << nr << " = " << params[nr] << endl;
-//        }
-      } else if (line.find("Subtitle") != string::npos)
+
+      } else if (type_of_stream == "subtitle")
       {
-        position_two = line.find("(", 0);
-        readPropsSub(line, position_two, params[0], params[1]);
-      //params[1] = "OFF";
+        readPropsSub(line, params[0], params[1]);
         params[2] = "OFF";
         params[3] = "OFF";
         params[4] = "OFF";
         analyze_.saveToVector(params[0], params[1], params[2], params[3],
                               params[4], 0, SRCSUB);
-//        for(unsigned int nr = 0; nr < 5; nr++) //Test purposes only
-//        {
-//            cout << "param " << nr << " = " << params[nr] << endl;
-//        }
       }
     }
   } while (readfile.eof() == false);
   readfile.close();
 }
 
-void FileManager::readPropsVideo(string line, unsigned int pos_start,
-                                 string (&params)[5])
+void FileManager::readPropsVideo(string line, string (&params)[5])
 {
-  stringstream ss;
-  unsigned int position = 0;
-  unsigned int position_two = 0;
-  unsigned int position_semicolon = 0;
+  stringstream bitrate_ss;
+  unsigned int param_begin = 0;
+  unsigned int param_end = 0;
   
   unsigned int bitrate_nr = 0;
-
-  line.erase(0, pos_start);
+  
+  string width;
+  string height;
+  string fps_param;
 
   //codec:
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[1] = line.substr(0, position);
-  line.erase(0, position_semicolon + 2);
-  
-  //Now the beginning of the string containes for example: yuv420p, this is not relevant therefore we skip this information...:
-  position_semicolon = line.find(",", 0);
-  line.erase(0, position_semicolon + 2);
-  
-  //resolution
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[3] = line.substr(0, position);
-  line.erase(0, position_semicolon + 2);
+  params[1] = processOrdinaryParameter(line, "codec_name");
   
   //Bitrate
-  position = line.find(" ", 0);
-  position_two = line.find(" ", position);
-  position_semicolon = line.find(",", 0);
-  params[2] = line.substr(0, position);
-  
-  if(line.substr(position + 1, position_two - 1) == "kb/s")
+  //Note: due to certain limitations, the bitrate is set in the method: readProperties()
+  if(params[2].substr(params[2].length() - 4) == "kb/s")
   {
     stringToInt(params[2], bitrate_nr);
     bitrate_nr = bitrate_nr*1000;
-    ss << bitrate_nr;
-    params[2] = ss.str();
+    bitrate_ss << bitrate_nr;
+    params[2] = bitrate_ss.str();
   }
-  line.erase(0, position_semicolon + 2);
+  
+  //resolution
+  width = processOrdinaryParameter(line, "width");
+  height = processOrdinaryParameter(line, "height");
+  params[3] =  width + "x" + height;
   
   //Frames per second
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[4] = line.substr(0, position);
-  line.erase(0, position_semicolon + 2);
+  fps_param = processOrdinaryParameter(line, "avg_frame_rate");
+  fps_param = line.substr(param_begin, param_end - param_begin);
+  if (fps_param.find("/") != string::npos)
+  {
+  	stringstream fps_ss;
+  	string fps_numerator = fps_param.substr(0, fps_param.find("/"));
+  	string fps_denominator = fps_param.substr(fps_param.find("/") + 1);
+  	float fps_numerator_d = atof(fps_numerator.c_str());
+  	float fps_denominator_d = atof(fps_denominator.c_str());
+  	float fps_d = fps_numerator_d / fps_denominator_d;
+  	
+  	float factor = pow(10.0, 4 - ceil(log10(fabs(fps_d))));
+    fps_d = round(fps_d * factor) / factor;
+    
+    fps_ss << fps_d;
+    fps_param = fps_ss.str();
+  }
+  
+  params[4] = fps_param;
 }
 
-void FileManager::readPropsAudio(string line, unsigned int pos_start, string (&params)[5])
+void FileManager::readPropsAudio(string line, string (&params)[5])
 {
-  stringstream ss;
-  unsigned int position = 0;
-  unsigned int position_two = 0;
-  unsigned int position_semicolon = 0;
+  unsigned int param_begin = 0;
+  unsigned int param_end = 0;
 
-  unsigned int bitrate_nr = 0;
+  //codec:
+  params[0] = processOrdinaryParameter(line, "codec_name");
+  
+  //channels:
+  params[1] = processOrdinaryParameter(line, "channels");
+  
+  //language:
+  params[2] = processOrdinaryParameter(line, "tag:language");
 
-  line.erase(0, pos_start + 1);
-
-  //Language:
-  position = line.find(")", 0);
-  params[2] = line.substr(0, position);
-  line.erase(0, params[2].length() + 10);
-
-  //Codec
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[0] = line.substr(0, position);
-  if(params[0].compare(params[0].length() - 1, 1, ",") == 0)
-  {
-      params[0].erase(params[0].length() - 1, 1);
-  }
-  line.erase(0, position_semicolon + 2);
-
-  //Sample Rate
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[4] = line.substr(0, position);
-  line.erase(0, position_semicolon + 2);
-
-  //Channels
-  position = line.find(" ", 0);
-  position_semicolon = line.find(",", 0);
-  params[1] = line.substr(0, position);
-  line.erase(0, position_semicolon + 2);
-
- if(params[1].find("(side)",0) != string::npos)
- {
-   position_two = params[1].find("(");
-   params[1].erase(position_two, position_two + 5);
- }
-  else if(params[1].compare("stereo,") == 0)
- {
-   params[1] = "stereo";
- }
-
-  //Now the beginning of the string containes for example: fltp, this is not relevant therefore we skip this information...:
-  position_semicolon = line.find(",", 0);
-  line.erase(0, position_semicolon + 2);
-
-  //Bitrate
-  position = line.find(" ", 0);
-  position_two = line.find('\n', position);
-  position_semicolon = line.find(",", 0);
-  params[3] = line.substr(0, position);
-
-  if (line.substr(position + 1, position_two - 1) == "kb/s")
-  {
-    stringToInt(params[3], bitrate_nr);
-    bitrate_nr = bitrate_nr * 1000;
-    ss << bitrate_nr;
-    params[3] = ss.str();
-  }
-  line.erase(0, position_semicolon + 2);
+  //bitrate:
+  params[3] = processOrdinaryParameter(line, "bit_rate");
+  
+  //sample rate:
+  params[4] = processOrdinaryParameter(line, "sample_rate");
 }
 
-void FileManager::readPropsSub(string line, unsigned int pos_start, string& param0,
+void FileManager::readPropsSub(string line, string& param0,
                                string& param1)
 {
-  unsigned int position = 0;
-  unsigned int second_space = 0;
+  unsigned int param_begin = 0;
+  unsigned int param_end = 0;
+
+  //codec:
+  param0 = processOrdinaryParameter(line, "codec_name");
   
-  line.erase(0, pos_start + 1);
+  //language:
+  param1 = processOrdinaryParameter(line, "tag:language");
+}
 
-  //Language:
-  position = line.find(")", 0);
-  param1 = line.substr(0, position);
-  line.erase(0, param1.length() + 13);
-
-  //Codec
-  position = line.find(" ", 0);
-  second_space = line.find(" ", position);
-  param0 = line.substr(0, position);
-  line.erase(0, second_space + 2);
+string FileManager::processOrdinaryParameter(string const& line, string const& c_param_name)
+{
+	unsigned int param_begin;
+	unsigned int param_end;
+	string param_name = c_param_name + "=";
+	string param;
+	
+	param_begin = line.find(param_name, 0);
+	if (param_begin != string::npos)
+  {
+  	param_begin = param_begin + param_name.length();
+		param_end  = line.find("|", param_begin);
+	
+		param = line.substr(param_begin, param_end - param_begin);
+		
+		if (param == "N/A")
+		{
+			param = "none";
+		}
+  } else
+  {
+  	return "none";
+  }
+  
+  return param;
 }

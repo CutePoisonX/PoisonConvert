@@ -33,6 +33,7 @@ public:
                              unsigned int identifier);
   void          clearEverything();
   void          clearAllInstances();
+	unsigned int  getVectorLength(unsigned int identifier);
   
 private:
   
