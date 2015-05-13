@@ -2,7 +2,7 @@ Version 1.4.1   1) Improved file properties-recognition
 		2) The not[value] parameter does work now with containers
 		3) Fixed bug where audio and subtitle-stream properties were not detected properly when no language
 		   was specified in the stream
-		3) Fixed bug in logfile where only the first detected stream of each category was display
+		3) Fixed bug in logfile where only the first detected stream of each category was displayed
 		4) Audio channels are from now on processed solely as numbers
 ------------------------------------------------------------------------------------------
 Version 1.4     1) Added recursive directory scanning for movies
