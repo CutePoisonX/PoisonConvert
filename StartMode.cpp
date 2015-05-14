@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <iostream>
 
 StartMode::StartMode(UserInterface& ui, VectorSourceManager& man,
                      FileManager& fileman, AnalyzeMedia& analyze,
@@ -91,7 +92,7 @@ int StartMode::listDirectory(string dir, vector<string>& files_of_interest)
     {
       if ((path_ext == important_files_.at(k) || //matches exactly
           important_files_.at(k) == "-" || //all fileextensions match
-          (important_files_.at(k).compare(0,3, "not") && important_files_.at(k).compare(3, string::npos, path_ext))) //matches when filextension is "not"...
+          (important_files_.at(k).compare(0,3, "NOT") == 0 && important_files_.at(k).compare(3, string::npos, path_ext) == 0)) //matches when filextension is "not"...
           && path_ext != "old") //extension "old" is never a match
       {
         bool add_file = true;
@@ -207,108 +208,113 @@ int StartMode::executeCommand()
       logfile_.append("\"");
       
       WriteLogHeader(job);
-              
-      ui_.writeString("", true);
-      ui_.writeString("Started job ", false, "red");
-      ui_.writeNumber(job + 1, false, "red");
-      ui_.writeString("/", false, "red");
-      ui_.writeNumber(important_files_.size(), false, "red");
-      ui_.writeString(": ", false, "red");
-      ui_.writeString(filename_without_path, true, "red");
       
       WriteLog("1. Analyzed File");
       WriteLog("");
       gettingInfos(important_files_.at(job), movie_duration_);
+	    
+	    if (applySettings() == true)
+	    {
+	    	ui_.writeString("", true);
+	      ui_.writeString("Started job ", false, "red");
+	      ui_.writeNumber(job + 1, false, "red");
+	      ui_.writeString("/", false, "red");
+	      ui_.writeNumber(important_files_.size(), false, "red");
+	      ui_.writeString(": ", false, "red");
+	      ui_.writeString(filename_without_path, true, "red");
       
-      applySettings();
-      
-      filename_noext = important_files_.at(job);
-      position = filename_noext.find_last_of(".");
-      old_fileext = filename_noext.substr(position, filename_noext.length() - position);
-      filename_noext.erase(position + 1, filename_noext.length());
-      
-      old_filename = important_files_.at(job);
-      old_filename.append(".old");
-      
-      if(nr_video_targets_ == 0 && vecman_.getVectorLen(SRCVIDEO) != 0 &&
-         analyze_.getVectorLen(SRCVIDEO) != 0)
-        old_filename.append("_nv");
-      if(nr_audio_targets_ == 0 && vecman_.getVectorLen(SRCAUDIO) != 0 &&
-         analyze_.getVectorLen(SRCAUDIO) != 0)
-        old_filename.append("_na");
-      if(nr_sub_targets_ == 0 && vecman_.getVectorLen(SRCSUB) != 0 &&
-         analyze_.getVectorLen(SRCSUB))
-        old_filename.append("_ns");
-      
-      rename(important_files_.at(job).c_str(), old_filename.c_str());
-      
-      ffmpeg_input = "ffmpeg -i \"";
-      ffmpeg_input.append(old_filename);
-      ffmpeg_input.append("\"");
-      ffmpeg_input.append(maps_);
-      ffmpeg_input.append(targets_);
-      ffmpeg_input.append(" -strict -2 -y \"");
-      
-      if (out_container_ == "-")
-      {
-        out_container_ = important_files_.at(job).substr(0, important_files_.at(job).find_last_of("."));
-      }
-      filename_noext.append(out_container_);
-      ffmpeg_input.append(filename_noext);
-      
-      WriteLogFfmpeg(ffmpeg_input);
-      
-      ffmpeg_input.append("\" 2>> ");
-      log_erase = logfile_;
-      log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
-      ffmpeg_input.append(log_erase);
-      
-      ui_.writeString("  Converting...", true, "yellow");
-      ffmpeg_response = system(ffmpeg_input.c_str());
-      conversion_success = checkForConversionSuccess(ffmpeg_response, filename_noext);
-      if (conversion_success)
-      {
-        ui_.writeString("  Finished converting...", true, "yellow");
-        if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
-           out_container_ == "mov" || out_container_ == "mp4"))
-        {
-          optimizeFile(filename_noext, log_erase);
-        }
-
-        MoveFile(filename_noext);
-      }
-      else
-      {
-        ui_.writeString("  Conversion failed...", true, "yellow");
-
-        //delete new file (incomplete)
-        remove(filename_noext.c_str());
-        //revert .old... extension:
-        rename(old_filename.c_str(), important_files_.at(job).c_str());
-
-        WriteLog("");
-        WriteLog("C O N V E R S I O N    F A I L E D");
-        failed_items++;
-      }
-
-      remove("/opt/tmp/poisonXprobelist");
-
-      maps_.clear();
-      targets_.clear();
-      nr_audio_targets_ = 0;
-      nr_sub_targets_ = 0;
-      nr_video_targets_ = 0;
-      prev_param_map_.clear();
-
-      used_orig_id_.clear();    
-      analyze_.clearEverything();
-      ui_.writeString("Finished job ", false, "red");
-      ui_.writeString(important_files_.at(job), true, "red");
-      if(settings_.getSettingsParam(DELETESET) == "Yes" &&
-         conversion_success)
-      {
-        remove(old_filename.c_str());
-      }
+	      filename_noext = important_files_.at(job);
+	      position = filename_noext.find_last_of(".");
+	      old_fileext = filename_noext.substr(position, filename_noext.length() - position);
+	      filename_noext.erase(position + 1, filename_noext.length());
+	      
+	      old_filename = important_files_.at(job);
+	      old_filename.append(".old");
+	      
+	      if(nr_video_targets_ == 0 && vecman_.getVectorLen(SRCVIDEO) != 0 &&
+	         analyze_.getVectorLen(SRCVIDEO) != 0)
+	        old_filename.append("_nv");
+	      if(nr_audio_targets_ == 0 && vecman_.getVectorLen(SRCAUDIO) != 0 &&
+	         analyze_.getVectorLen(SRCAUDIO) != 0)
+	        old_filename.append("_na");
+	      if(nr_sub_targets_ == 0 && vecman_.getVectorLen(SRCSUB) != 0 &&
+	         analyze_.getVectorLen(SRCSUB))
+	        old_filename.append("_ns");
+	      
+	      rename(important_files_.at(job).c_str(), old_filename.c_str());
+	      
+	      ffmpeg_input = "ffmpeg -i \"";
+	      ffmpeg_input.append(old_filename);
+	      ffmpeg_input.append("\"");
+	      ffmpeg_input.append(maps_);
+	      ffmpeg_input.append(targets_);
+	      ffmpeg_input.append(" -strict -2 -y \"");
+	      
+	      if (out_container_ == "-")
+	      {
+	        out_container_ = important_files_.at(job).substr(0, important_files_.at(job).find_last_of("."));
+	      }
+	      filename_noext.append(out_container_);
+	      ffmpeg_input.append(filename_noext);
+	      
+	      WriteLogFfmpeg(ffmpeg_input);
+	      
+	      ffmpeg_input.append("\" 2>> ");
+	      log_erase = logfile_;
+	      log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
+	      ffmpeg_input.append(log_erase);
+	      
+	      ui_.writeString("  Converting...", true, "yellow");
+	      ffmpeg_response = system(ffmpeg_input.c_str());
+	      conversion_success = checkForConversionSuccess(ffmpeg_response, filename_noext);
+	      if (conversion_success)
+	      {
+	        ui_.writeString("  Finished converting...", true, "yellow");
+	        if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
+	           out_container_ == "mov" || out_container_ == "mp4"))
+	        {
+	          optimizeFile(filename_noext, log_erase);
+	        }
+	
+	        MoveFile(filename_noext);
+	      }
+	      else
+	      {
+	        ui_.writeString("  Conversion failed...", true, "yellow");
+	
+	        //delete new file (incomplete)
+	        remove(filename_noext.c_str());
+	        //revert .old... extension:
+	        rename(old_filename.c_str(), important_files_.at(job).c_str());
+	
+	        WriteLog("");
+	        WriteLog("C O N V E R S I O N    F A I L E D");
+	        failed_items++;
+	      }
+	
+	      remove("/opt/tmp/poisonXprobelist");
+	
+	      maps_.clear();
+	      targets_.clear();
+	      nr_audio_targets_ = 0;
+	      nr_sub_targets_ = 0;
+	      nr_video_targets_ = 0;
+	      prev_param_map_.clear();
+	
+	      used_orig_id_.clear();    
+	      analyze_.clearEverything();
+	      ui_.writeString("Finished job ", false, "red");
+	      ui_.writeString(important_files_.at(job), true, "red");
+	      if(settings_.getSettingsParam(DELETESET) == "Yes" &&
+	         conversion_success)
+	      {
+	        remove(old_filename.c_str());
+	      }
+    	} else
+    	{
+    		WriteLog("No stream matched ... skipping this item.");
+      	WriteLog("");
+    	}
     }
     if(job != 0)
     {
@@ -357,7 +363,7 @@ int StartMode::gettingInfos(string const& filename, string& movie_duration)
   
 }
 
-int StartMode::applySettings()
+bool StartMode::applySettings() //applies the map specifier -> if false is returned, nothing did match -> no conversion for this job
 {
   stringstream ss;
   string orig_pref;
@@ -365,6 +371,7 @@ int StartMode::applySettings()
 
   bool preferences[5] = {false};
   bool use_this_id = true;
+  bool something_did_match = false;
   
   unsigned int vec_len_wish = 0;
   unsigned int vec_len_orig = 0;
@@ -427,7 +434,7 @@ int StartMode::applySettings()
           if (preferences[0] == true && preferences[1] == true && preferences[2] == true &&
               preferences[3] == true && preferences[4] == true)
           {
-
+						something_did_match = true;
             maps_.append(" -map 0:");
             ss << ((priority_orig - 1) + correcture);
             maps_.append(ss.str());
@@ -441,6 +448,8 @@ int StartMode::applySettings()
       }
     }
   }
+  
+  return something_did_match;
 }
 
 void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int identifier,

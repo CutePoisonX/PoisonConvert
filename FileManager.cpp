@@ -507,8 +507,6 @@ void FileManager::readProperties(string filename, string& duration) throw (FileR
 void FileManager::readPropsVideo(string line, string (&params)[5])
 {
   stringstream bitrate_ss;
-  unsigned int param_begin = 0;
-  unsigned int param_end = 0;
   
   unsigned int bitrate_nr = 0;
   
@@ -536,7 +534,6 @@ void FileManager::readPropsVideo(string line, string (&params)[5])
   
   //Frames per second
   fps_param = processOrdinaryParameter(line, "avg_frame_rate");
-  fps_param = line.substr(param_begin, param_end - param_begin);
   if (fps_param.find("/") != string::npos)
   {
   	stringstream fps_ss;
@@ -558,9 +555,6 @@ void FileManager::readPropsVideo(string line, string (&params)[5])
 
 void FileManager::readPropsAudio(string line, string (&params)[5])
 {
-  unsigned int param_begin = 0;
-  unsigned int param_end = 0;
-
   //codec:
   params[0] = processOrdinaryParameter(line, "codec_name");
   
@@ -580,9 +574,6 @@ void FileManager::readPropsAudio(string line, string (&params)[5])
 void FileManager::readPropsSub(string line, string& param0,
                                string& param1)
 {
-  unsigned int param_begin = 0;
-  unsigned int param_end = 0;
-
   //codec:
   param0 = processOrdinaryParameter(line, "codec_name");
   
