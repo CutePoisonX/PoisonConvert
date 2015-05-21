@@ -1,4 +1,4 @@
-CXX=g++
+CXX=g++ -I/opt/include -L/lib/
 CXXFLAGS=-c -Wall -g
 LDFLAGS=
 SOURCES = $(wildcard *.cpp)

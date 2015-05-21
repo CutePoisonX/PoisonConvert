@@ -50,10 +50,10 @@ public:
   void          readImportantFiles(vector<string>& filenames) throw (FileReadException, 
                                                                       OpenFileException);
   void          readProperties(string filename, string& duration) throw (FileReadException, OpenFileException);
-  void          readPropsVideo(string line, unsigned int pos_start, string (&params)[5]);
-  void          readPropsAudio(string line, unsigned int pos_start, string (&params)[5]);
-  void          readPropsSub(string line, unsigned int pos_start, string& param0,
-                             string& param1);
+  void          readPropsVideo(string line, string (&params)[5]);
+  void          readPropsAudio(string line, string (&params)[5]);
+  void          readPropsSub(string line, string& param0, string& param1);
+  string 				processOrdinaryParameter(string const& line, string const& param_name);
 private:
   
   //----------------------------------------------------------------------------

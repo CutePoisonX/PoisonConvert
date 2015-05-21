@@ -67,7 +67,7 @@ private:
   int                   listDirectory(string dir, vector<string>& files_of_interest);
   int                   gettingFiles();
   int                   gettingInfos(string const& filename, string& movie_duration);
-  int                   applySettings();
+  bool                  applySettings();
   
   void                  evaluatingTargets(unsigned int priority_wish, 
                                           unsigned int identifier,

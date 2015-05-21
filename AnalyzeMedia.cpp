@@ -44,6 +44,19 @@ int AnalyzeMedia::saveToVector(string& param1, string& param2, string& param3,
   tmp.push_back(new StreamPreference(param1, param2, param3, param4, param5));
 }
 
+unsigned int AnalyzeMedia::getVectorLength(unsigned int identifier)
+{
+    switch (identifier)
+  {
+    case SRCVIDEO:
+      return source_video_vect_.size();
+    case SRCAUDIO:
+      return source_audio_vect_.size();
+    case SRCSUB:
+      return source_sub_vect_.size();
+  }
+}
+
 vector<StreamPreference*>& AnalyzeMedia::getVector(unsigned int identifier)
 {
     switch (identifier)
