@@ -46,7 +46,7 @@ ac3HEXT-HEXT-HEXT-HEXT-HEXT
 -------END-RULES-------
 ------START-RULES------
 1
-NOT mov_textHEXT-HEXT-HEXT-HEXT-HEXT
+NOTmov_textHEXT-HEXT-HEXT-HEXT-HEXT
 1
 1
 -------END-RULES-------
