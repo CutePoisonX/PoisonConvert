@@ -21,6 +21,7 @@
 #include "UserInterface.h"
 #include <sys/stat.h>
 #include <string.h>
+#include <cstdlib>
 
 FolderSetting::FolderSetting(UserInterface ui, string name, string description, 
                            string settings_change_prompt, string default_param)
