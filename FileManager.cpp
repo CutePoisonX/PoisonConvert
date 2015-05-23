@@ -24,6 +24,7 @@
 #include "Settings.h"
 #include <sstream>
 #include <vector>
+#include <cstdlib>
 #include <math.h>
 
 using namespace std;
