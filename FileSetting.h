@@ -17,22 +17,28 @@
 //    along with PoisonConvert.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef FOLDERSETTING_H
-#define	FOLDERSETTING_H
+#ifndef FILESETTING_H
+#define	FILESETTING_H
 
 #include "Settings.h"
+#include <string>
 
-class FolderSetting : public Settings {
+class UserInterface;
+using namespace std;
+
+class FileSetting : public Settings {
 public:
-                FolderSetting(UserInterface ui, string name, string description,
-                           string settings_change_prompt, string default_param);
-                FolderSetting(const FolderSetting& orig);
-  virtual      ~FolderSetting();
-  
+                  FileSetting(UserInterface ui, string name, string description,
+															string settings_change_prompt, string default_param,
+															string error_promp_str);
+                  FileSetting(const Settings& orig);
+    virtual      ~FileSetting();
+
 protected:
     virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
-    virtual void changeParam(string const& new_param);
+
+    string error_promp_str_;
+  
 };
 
-#endif	/* FOLDERSETTING_H */
-
+#endif	/* FILESETTING_H */

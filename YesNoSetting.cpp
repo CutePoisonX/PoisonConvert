@@ -35,47 +35,39 @@ YesNoSetting::~YesNoSetting()
 {
 }
 
-const int YesNoSetting::checkParam(string new_param)
+YesNoSetting::PARAM_CHANGE_RETURN YesNoSetting::checkParam(string const& new_param, bool ui_output)
 {
-  if (new_param == "y")
+  if (new_param != "y" && new_param != "n" && new_param != "Yes" && new_param != "No" &&
+      new_param != "yes" && new_param != "no")
   {
-    settings_param_ = "Yes";
-  } else if (new_param == "n")
-  {
-    settings_param_ = "No";
-  } else
-  {
-    ui_.writeString("Please enter [y] for 'yes' and [n] for 'no'!", true);
-    return -1;
+    if (ui_output)
+    {
+      ui_.writeString("Please enter [y] for 'yes' and [n] for 'no'!", true);
+    }
+
+    return PARAM_CHANGE_ERROR;
   }
   
-  return 0;
+  return PARAM_CHANGE_SUCCESS;
 }
 
-const string YesNoSetting::setParam()
+void YesNoSetting::changeParam(string const& new_param)
+//We can assume that new_param is either y or n since checkParam was called before ...
 {
-  string new_param;
-  
-  ui_.writeString(settings_change_prompt_, true, "green");
-  do
-  {
-    new_param = ui_.readStringNoCapitalize();
+  std::string actual_param;
     
-  } while (checkParam(new_param) != 0);
-  ui_.writeString("Saved.", true, "green");
-  ui_.readString(false);
-  
-  return settings_param_;
-}
-
-const int YesNoSetting::writeParam(string new_param)
-{
-  if(new_param == "Yes" || new_param == "No")
+  if (new_param == "y" || new_param == "yes")
   {
-    settings_param_ = new_param;
-
-    return 0;
+    actual_param = "Yes";
   }
-  
-  return -1;
+  else if (new_param == "n" || new_param == "no")
+  {
+    actual_param = "No";
+  }
+  else
+  {
+    actual_param = new_param;
+  }
+    
+  settings_param_ = actual_param;
 }

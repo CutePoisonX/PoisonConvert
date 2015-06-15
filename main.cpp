@@ -19,6 +19,8 @@
 
 #include <cstdlib>
 #include <string>
+#include <tclap/CmdLine.h>
+
 #include "VectorSourceManager.h"
 #include "UserInterface.h"
 #include "ConfigMode.h"
@@ -33,327 +35,366 @@
  
 using namespace std;
 
-const string version = "Version: 1.4";
+string const version = "1.4";
+
+void setCommandLineSetting(UserInterface& ui, SettingsMode& settingsmode, std::string const& settings_value, SettingsMode::SETTING_SPECIFIER set_spec)
+{
+  if (settingsmode.getSettingsParam(set_spec) != settings_value)
+  {
+    if (settingsmode.writeParam(settings_value, set_spec) != Settings::PARAM_CHANGE_SUCCESS)
+    {
+      ui.writeString("Warning: Ignoring invalid value for option: " + settingsmode.getSettingsName(set_spec) + ".", true, "yellow");
+    }
+  }
+}
+
+bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode& settingsmode, std::vector<std::string>& config_files)
+{
+  bool delete_file_default;
+  bool optimize_file_default;
+  try
+  {
+      TCLAP::CmdLine cmd("PoisonConvert version " + version + " is part of the MediaWare Factory collection (http://www.mediaware-factory.com).\n"
+                         "If you experience any bugs, please file an issue on github. For any other feedback, requests, etc. please use the contact form at MediaWare Factories homepage.\n"
+                         "Developed by Christoph Ebner and licensed under the GPLv3 (see: https://www.gnu.org/licenses/gpl, or the COPYING-file distributed with this script)."
+                         , ' ', version);
+    TCLAP::SwitchArg start_arg("s", "start", "Start converting.", false);
+    TCLAP::MultiArg<std::string> conf_file_arg("c", settingsmode.getSettingsName(SettingsMode::CONFIGNAME), "Config file you want to use.", false, "filename");
+    TCLAP::ValueArg<std::string> conf_path_arg("p", settingsmode.getSettingsName(SettingsMode::CONFIGLOC), "Path to config files.", false, settingsmode.getSettingsParam(SettingsMode::CONFIGLOC), "path");
+
+    if (settingsmode.getSettingsParam(SettingsMode::DELETESET) == "Yes")
+    {
+      delete_file_default = true;
+    }
+    else
+    {
+      delete_file_default = false;
+    }
+    TCLAP::SwitchArg delete_arg("D",settingsmode.getSettingsName(SettingsMode::DELETESET), "Delete original file after conversion.", delete_file_default);
+
+    if (settingsmode.getSettingsParam(SettingsMode::OPTIMIZESET) == "Yes")
+    {
+      optimize_file_default = true;
+    }
+    else
+    {
+      optimize_file_default = false;
+    }
+    TCLAP::SwitchArg optimize_arg("o", settingsmode.getSettingsName(SettingsMode::OPTIMIZESET), "Optimize file for streaming.", optimize_file_default);
+
+    TCLAP::ValueArg<std::string> log_path_arg("l", settingsmode.getSettingsName(SettingsMode::LOGPATH), "Location of logfiles.", false, settingsmode.getSettingsParam(SettingsMode::LOGPATH), "path");
+    TCLAP::ValueArg<std::string> movie_path_arg("m", settingsmode.getSettingsName(SettingsMode::MOVIEPATH), "Where to look for movies.", false, settingsmode.getSettingsParam(SettingsMode::MOVIEPATH), "path");
+    TCLAP::ValueArg<std::string> dest_path_arg("d", settingsmode.getSettingsName(SettingsMode::DESTINATION), "Where to save processed movies.", false, settingsmode.getSettingsParam(SettingsMode::DESTINATION), "path");
+
+    cmd.add(conf_file_arg);
+    cmd.add(conf_path_arg);
+    cmd.add(delete_arg);
+    cmd.add(optimize_arg);
+    cmd.add(log_path_arg);
+    cmd.add(movie_path_arg);
+    cmd.add(dest_path_arg);
+
+    cmd.parse(argc, argv);
+      
+    setCommandLineSetting(ui, settingsmode, conf_path_arg.getValue(), SettingsMode::CONFIGLOC);
+    if (delete_arg.getValue() == true)
+    {
+    	setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::DELETESET);
+    }
+    if (optimize_arg.getValue() == true)
+    {
+    	setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::OPTIMIZESET);
+    }
+    setCommandLineSetting(ui, settingsmode, log_path_arg.getValue(), SettingsMode::LOGPATH);
+    setCommandLineSetting(ui, settingsmode, movie_path_arg.getValue(), SettingsMode::MOVIEPATH);
+    setCommandLineSetting(ui, settingsmode, dest_path_arg.getValue(), SettingsMode::DESTINATION);
+
+    config_files = conf_file_arg.getValue();  //the config files get checked later if they exist, etc ...
+    if (start_arg.getValue())
+    {
+    	return true;
+    }
+    else
+    {
+    	return false;
+    }
+  }
+  catch(std::exception const& except)
+  {
+  	ui.writeString(except.what(), true, "red");
+  	exit(-1);
+  }
+}
+
+bool readOutSettingFile(UserInterface& ui, FileManager& filemanager)
+{
+  try
+  {
+    filemanager.readSettings();
+  } catch (OpenFileException)
+  {
+    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /etc. Please check settings-menu.", true, "red");
+    filemanager.saveSettingsToFile();
+    ui.readString(false);
+
+    return false;
+  } catch (exception)
+  {
+    ui.writeString("There occured an error at reading out the \"Settings\"-file. Please enter settings.", true, "red");
+    ui.writeString("Please check settings-menu.", true, "red");
+    ui.readString(false);
+
+    return false;
+  }
+
+  return true;
+}
+
+bool readOutPreferenceFile(UserInterface& ui, FileManager& filemanager, VectorSourceManager& vecman)
+{
+  try
+  {
+    filemanager.readPreferences();
+  } catch (OpenFileException)
+  {
+    ui.writeString("Can not open config-file. Please check if file is present and you entered filename and path correctly.", true, "red");
+    ui.writeString("Please go to settings-menu and enter the correct configuration-settings.", true, "red");
+    vecman.clearAllInstances();
+    return false;
+  } catch (exception)
+  {
+    ui.writeString("There occured an error at reading out the config-file. It seems that it is corrupt.", true, "red");
+    ui.writeString("Loaded without any configurations.", true, "red");
+    vecman.clearAllInstances();
+    return false;
+  }
+
+  return true;
+}
+
+bool startInNormalMode(UserInterface& ui, FileManager& filemanager, VectorSourceManager& vecman,
+                       SettingsMode& settingsmode, StartMode& startmode, AnalyzeMedia& analyze,
+                       ConfigMode& configmode)
+{
+  string input;
+  bool going_back = true;
+  bool settings_fail = false;
+
+  if (readOutPreferenceFile(ui, filemanager, vecman) == false)
+  {
+    ui.readString(false);
+  }
+
+  ui.writeString("", true);
+  ui.writeString("**************************************************************", true);
+  ui.writeString("****************** ");
+  ui.writeString("WELCOME TO POISONCONVERT", false, "green");
+  ui.writeString(" ******************", true);
+  ui.writeString("**************************************************************", true);
+  ui.writeString("", true);
+
+  while (input != "exit")
+  {
+    if (going_back == true)
+    {
+      ui.writeString("Please select one of the following options:", true, "red");
+      ui.writeString("  [");
+      ui.writeString("start", false, "blue");
+      ui.writeString("]    - start conversion with custom settings.", true);
+      ui.writeString("  [");
+      ui.writeString("config", false, "blue");
+      ui.writeString("]   - videostream management.", true);
+      ui.writeString("  [");
+      ui.writeString("settings", false, "blue");
+      ui.writeString("] - enter some settings.", true);
+      ui.writeString("  [");
+      ui.writeString("exit", false, "blue");
+      ui.writeString("]     - quit program.", true);
+      ui.writeString("", true);
+      going_back = false;
+    }
+    input = ui.readStringNoCapitalize();
+    if (input == "start")
+    {
+      settings_fail = false;
+      for (int i = 0; i < settingsmode.getVectorLen(); i++)
+      {
+        if (settingsmode.getSettingsParam(i) == "")
+        {
+          ui.writeString("Empty setting: ", false, "red");
+          ui.writeString(settingsmode.getSettingsName(i), true, "red");
+          settings_fail = true;
+        }
+      }
+
+      if (settings_fail == true)
+      {
+        ui.writeString("Please enter listed setting(s). Go to 'settings - menu' to do so.", true, "green");
+        ui.readString(false);
+        going_back = false;
+      }
+      if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
+          vecman.getVectorLen(SRCSUB) != 0)
+      {
+        if (settings_fail == false)
+        {
+          try
+          {
+            startmode.executeCommand();
+          } catch (exception)
+          {
+            ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+            analyze.clearAllInstances();
+            vecman.clearAllInstances();
+            return -1;
+          }
+          going_back = true;
+        }
+      } else
+      {
+        ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, "green");
+        ui.readString(false);
+        going_back = false;
+      }
+    } else if (input == "config")
+    {
+      try
+      {
+        if( filemanager.checkPathToConfig() == "" )
+        {
+          ui.writeString("Warning: You did not specify a path to the config-file in settings. Changes will not be saved.", true, "red");
+          ui.readString(false);
+        }
+        configmode.executeCommand();
+        if(filemanager.savePreferencesToFile() == -1)
+        {
+          ui.writeString("Did not save changes because you did not specify a path to a config-file in settings.", true, "red");
+          ui.readString(false);
+        }
+      } catch (FileWriteException)
+      {
+        ui.writeString("Can not write config-file. Please check if poisonconvert has enough rights to do so.", true, "red");
+      } catch (exception)
+      {
+        ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+        analyze.clearAllInstances();
+        vecman.clearAllInstances();
+        return -1;
+      }
+      going_back = true;
+    } else if (input == "settings")
+    {
+      try
+      {
+        if (settingsmode.executeCommand() == SettingsMode::SAVE_SETTINGS)
+        {
+          filemanager.saveSettingsToFile();
+        }
+      } catch (FileWriteException)
+      {
+        ui.writeString("Can not write settings-file. Please check if poisonconvert has enough rights to do so.", true, "red");
+        ui.readString(false);
+      } catch (exception)
+      {
+        ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+        analyze.clearAllInstances();
+        vecman.clearAllInstances();
+        return -1;
+      }
+      if (filemanager.checkPathToConfig() != "")
+      {
+        try
+        {
+          vecman.clearAllInstances();
+          filemanager.readPreferences();
+        } catch (OpenFileException)
+        {
+          ui.writeString("Attention: Config file empty or not created (this is normal if you specified a new config-file. Just create some configurations).", true, "red");
+          ui.readString(false);
+        } catch (exception)
+        {
+          ui.writeString("There occured an error at reading out the config-file. It seems, that it is corrupt.", true, "red");
+          ui.writeString("Loaded without any configurations.", true, "red");
+          vecman.clearAllInstances();
+          ui.readString(false);
+        }
+      } else
+      {
+        ui.writeString("Warning: You did not specify a path to the config-file in settings. Cannot read/create config-file.", true, "red");
+        ui.readString(false);
+      }
+      going_back = true;
+    } else if (input != "exit")
+    {
+      ui.writeString("Please enter one of the listed options!", true);
+    }
+  }
+}
 
 int main(int argc, char** argv)
 {
-  string input;
-  string startargument = " ";
-  string filenameargument = " ";
-  bool going_back = true;
-  bool next_file = false;
-  bool settings_fail = false;
-  
-  if(argv[1] != 0)
-    startargument = argv[1];
-  if(argv[2] != 0)
-    filenameargument = argv[2];
-  
+  bool immediate_start;
+  std::vector<std::string> config_files;
+
   UserInterface ui;
   VectorSourceManager vecman;
   AnalyzeMedia analyze;
   ConfigMode configmode(ui, vecman);
   SettingsMode settingsmode(ui);
-  
+
   FileManager filemanager(settingsmode, vecman, analyze);
   StartMode startmode(ui, vecman, filemanager, analyze, settingsmode);
-  
-  //started with "version"
-  //----------------------------------------------------------------------------
-  if(startargument == "version")
+
+  if (readOutSettingFile(ui, filemanager))
   {
-    ui.writeString(version, true, "green"); 
-    return 0;
+  	immediate_start = parseCmdLineOptions(argc, argv, ui, settingsmode, config_files);
   }
-  //started without arguments
-  //----------------------------------------------------------------------------
-  if (startargument != "start")
+  else
   {
-    try
-    {
-      filemanager.readSettings();
-    } catch (OpenFileException)
-    {
-      ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /opt/etc. Please check settings-menu.", true, "red");
-      filemanager.saveSettingsToFile();
-      ui.readString(false);
-    } catch (exception)
-    {
-      ui.writeString("There occured an error at reading out the \"Settings\"-file. Please enter settings.", true, "red");
-      ui.writeString("Please check settings-menu.", true, "red");
-      ui.readString(false);
-    }
-    try
-    {
-      filemanager.readPreferences();
-    } catch (OpenFileException)
-    {
-      ui.writeString("Can not open config-file. Please check if file is present and you entered filename and path correctly.", true, "red");
-      ui.writeString("Please go to settings-menu and enter the correct configuration-settings.", true, "red");
-      vecman.clearAllInstances();
-      ui.readString(false);
-    } catch (exception)
-    {
-      ui.writeString("There occured an error at reading out the config-file. It seems, that it is corrupt.", true, "red");
-      ui.writeString("Loaded without any configurations.", true, "red");
-      vecman.clearAllInstances();
-      ui.readString(false);
-    }
-    system("clear");
-    ui.writeString("", true);
-    ui.writeString("**************************************************************", true);
-    ui.writeString("****************** ");
-    ui.writeString("WELCOME TO POISONCONVERT", false, "green");
-    ui.writeString(" ******************", true);
-    ui.writeString("**************************************************************", true);
-    ui.writeString("", true);
+    ui.writeString("Ignored any command line options.", true, "yellow");
+    immediate_start = false;
+  }
 
-    while (input != "exit")
+  if (immediate_start)
+  {
+    for (unsigned int config_file_nr = 0; config_file_nr < config_files.size(); ++config_file_nr)
     {
-      if (going_back == true)
-      {
-        ui.writeString("Please select one of the following options:", true, "red");
-        ui.writeString("  [");
-        ui.writeString("start", false, "blue");
-        ui.writeString("]    - start conversion with custom settings.", true);
-        ui.writeString("  [");
-        ui.writeString("config", false, "blue");
-        ui.writeString("]   - videostream management.", true);
-        ui.writeString("  [");
-        ui.writeString("settings", false, "blue");
-        ui.writeString("] - enter some settings.", true);
-        ui.writeString("  [");
-        ui.writeString("exit", false, "blue");
-        ui.writeString("]     - quit program.", true);
-        ui.writeString("", true);
-        going_back = false;
-      }
-      input = ui.readStringNoCapitalize();
-      if (input == "start")
-      {
-        settings_fail = false;
-        for (int i = 0; i < settingsmode.getVectorLen(); i++)
-        {
-          if (settingsmode.getSettingsParam(i) == "")
-          {
-            ui.writeString("Empty setting: ", false, "red");
-            ui.writeString(settingsmode.getSettingsName(i), true, "red");
-            settings_fail = true;
-          }
-        }
+      std::string config_file = config_files[config_file_nr];
+      settingsmode.writeParam(config_file, SettingsMode::CONFIGNAME);
 
-        if (settings_fail == true)
-        {
-          ui.writeString("Please enter listed setting(s). Go to 'settings - menu' to do so.", true, "green");
-          ui.readString(false);
-          going_back = false;
-        }
+      ui.writeString("Processing config-file: " + config_file, false);
+      if (readOutPreferenceFile(ui, filemanager, vecman) == true)
+      {
         if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
             vecman.getVectorLen(SRCSUB) != 0)
         {
-          if (settings_fail == false)
-          {
-            try
-            {
-              startmode.executeCommand();
-            } catch (exception)
-            {
-              ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-              analyze.clearAllInstances();
-              vecman.clearAllInstances();
-              return -1;
-            }
-            going_back = true;
-          }
-        } else
-        {
-          ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, "green");
-          ui.readString(false);
-          going_back = false;
-        }
-      } else if (input == "config")
-      {
-        try
-        {
-          if( filemanager.checkPathToConfig() == "" )
-          {
-            ui.writeString("Warning: You did not specify a path to the config-file in settings. Changes will not be saved.", true, "red");
-            ui.readString(false);
-          }
-          configmode.executeCommand();
-          if(filemanager.savePreferencesToFile() == -1)
-          {
-            ui.writeString("Did not save changes because you did not specify a path to a config-file in settings.", true, "red");
-            ui.readString(false);
-          }
-        } catch (FileWriteException)
-        {
-          ui.writeString("Can not write config-file. Please check if poisonconvert has enough rights to do so.", true, "red");
-        } catch (exception)
-        {
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-          analyze.clearAllInstances();
-          vecman.clearAllInstances();
-          return -1;
-        }
-        going_back = true;
-      } else if (input == "settings")
-      {
-        try
-        {
-          settingsmode.executeCommand();
-          filemanager.saveSettingsToFile();
-        } catch (FileWriteException)
-        {
-          ui.writeString("Can not write settings-file. Please check if poisonconvert has enough rights to do so.", true, "red");
-          ui.readString(false);
-        } catch (exception)
-        {
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-          analyze.clearAllInstances();
-          vecman.clearAllInstances();
-          return -1;
-        }
-        if (filemanager.checkPathToConfig() != "")
-        {
           try
           {
+            startmode.executeCommand();
+            analyze.clearAllInstances();
             vecman.clearAllInstances();
-            filemanager.readPreferences();
-          } catch (OpenFileException)
-          {
-            ui.writeString("Attention: Config file empty or not created (this is normal if you specified a new config-file. Just create some configurations).", true, "red");
-            ui.readString(false);
           } catch (exception)
           {
-            ui.writeString("There occured an error at reading out the config-file. It seems, that it is corrupt.", true, "red");
-            ui.writeString("Loaded without any configurations.", true, "red");
+            ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+            analyze.clearAllInstances();
             vecman.clearAllInstances();
-            ui.readString(false);
+            return -1;
           }
         } else
         {
-          ui.writeString("Warning: You did not specify a path to the config-file in settings. Cannot read/create config-file.", true, "red");
-          ui.readString(false);
-        }
-        going_back = true;
-      } else if (input != "exit")
-      {
-        ui.writeString("Please enter one of the listed options!", true);
-      }
-    }
-  } else //user specified "start"
-  {
-    try
-    {
-      filemanager.readSettings();
-    } catch (OpenFileException)
-    {
-      ui.writeString("Cannot open settings-file \"PoisonConvert_Settings\" in /opt/etc. Aborting...", true, "red");
-      analyze.clearAllInstances();
-      vecman.clearAllInstances();
-      return -1;
-    } catch (exception)
-    {
-      ui.writeString("There occured an error at reading out the \"Settings\"-file. Aborting...", true, "red");
-      analyze.clearAllInstances();
-      vecman.clearAllInstances();
-      return -1;
-    }
-    if (argc > 2) //that means that the user specified one or more filenames
-    {
-      for (unsigned int arg = 2; arg < argc; arg++)
-      {
-        next_file = false;
-        filenameargument = argv[arg];
-        settingsmode.writeParam(filenameargument, CONFIGNAME);
-
-        try
-        {
-          ui.writeString("Processing config-file: ", false);
-          ui.writeString(filenameargument, true);
-          filemanager.readPreferences();
-        } catch (OpenFileException)
-        {
-          ui.writeString("Can not open config-file.", true, "red");
-          vecman.clearAllInstances();
-          next_file = true;
-        } catch (exception)
-        {
-          ui.writeString("There occured an error at reading out the config-file.", true, "red");
-          vecman.clearAllInstances();
-          next_file = true;
-        }
-        if (next_file == false)
-        {
-          if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
-              vecman.getVectorLen(SRCSUB) != 0)
-          {
-            try
-            {
-              startmode.executeCommand();
-              analyze.clearAllInstances();
-              vecman.clearAllInstances();
-            } catch (exception)
-            {
-              ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-              analyze.clearAllInstances();
-              vecman.clearAllInstances();
-              return -1;
-            }
-          } else 
-          {
-            ui.writeString("Cannot start. Config-file has no rules.", true, "red");
-            analyze.clearAllInstances();
-            vecman.clearAllInstances();
-            if(arg >= argc - 1)
-            {
-              return -1;
-            }
-          }
-        }
-        ui.writeString("", true);
-      }
-    } else //the user only specified "start" - so we are loading the default config-file
-    {
-      try
-      {
-        filemanager.readPreferences();
-      } catch (OpenFileException)
-      {
-        ui.writeString("Can not open config-file. Please check if file is present and you entered filename and path correctly.", true, "red");
-        vecman.clearAllInstances();
-        return -1;
-      } catch (exception)
-      {
-        ui.writeString("There occured an error at reading out the config-file. It seems, that it is corrupt.", true, "red");
-        vecman.clearAllInstances();
-        return -1;
-      }
-      if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
-          vecman.getVectorLen(SRCSUB) != 0)
-      {
-        try
-        {
-          startmode.executeCommand();
+          ui.writeString("Cannot start. Config-file has no rules.", true, "red");
           analyze.clearAllInstances();
           vecman.clearAllInstances();
-        } catch (exception)
-        {
-          ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true);
-          analyze.clearAllInstances();
-          vecman.clearAllInstances();
-          return -1;
         }
-      } else
-      {
-        ui.writeString("Cannot start. Config-file has no rules.", true, "red");
-        analyze.clearAllInstances();
-        vecman.clearAllInstances();
-        return -1;
       }
+      ui.writeString("", true);
     }
   }
+  else
+  {
+    return startInNormalMode(ui, filemanager, vecman, settingsmode, startmode, analyze, configmode);
+  }
+
   analyze.clearAllInstances();
   vecman.clearAllInstances();
   return 0;

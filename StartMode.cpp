@@ -151,7 +151,7 @@ int StartMode::gettingFiles()
   
   //getting files
   vector<string> files_of_interest;
-  string directory_to_list = settings_.getSettingsParam(MOVIEPATH);
+  string directory_to_list = settings_.getSettingsParam(SettingsMode::MOVIEPATH);
 
   if (listDirectory(directory_to_list.substr(0, directory_to_list.size() - 1), files_of_interest) == -1)
   {
@@ -172,8 +172,6 @@ int StartMode::executeCommand()
   string filename_noext;
   string old_filename;
   string old_fileext;
-
-  string log_erase;
   
   unsigned int position = 0;
   unsigned int job = 0;
@@ -202,11 +200,10 @@ int StartMode::executeCommand()
       bool conversion_success = false;
 
       string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1);
-      logfile_ = "\" >> \"";
-      logfile_.append(settings_.getSettingsParam(LOGPATH));
+        
+      logfile_ = settings_.getSettingsParam(SettingsMode::LOGPATH);
       logfile_.append(filename_without_path);
       logfile_.append(".log");
-      logfile_.append("\"");
       
       WriteLogHeader(job);
       
@@ -260,24 +257,26 @@ int StartMode::executeCommand()
 	      
 	      WriteLogFfmpeg(ffmpeg_input);
 	      
-	      ffmpeg_input.append("\" 2>> ");
-	      log_erase = logfile_;
-	      log_erase.erase(0,5); //delete: [" >> ] (without brackets) from logfile
-	      ffmpeg_input.append(log_erase);
-	      
+	      ffmpeg_input.append("\" 2>> \"");
+	      ffmpeg_input.append(logfile_);
+          ffmpeg_input.append("\"");
+            
 	      ui_.writeString("  Converting...", true, "yellow");
 	      ffmpeg_response = system(ffmpeg_input.c_str());
 	      conversion_success = checkForConversionSuccess(ffmpeg_response, filename_noext);
 	      if (conversion_success)
 	      {
 	        ui_.writeString("  Finished converting...", true, "yellow");
-	        if(settings_.getSettingsParam(OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
+	        if(settings_.getSettingsParam(SettingsMode::OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
 	           out_container_ == "mov" || out_container_ == "mp4"))
 	        {
-	          optimizeFile(filename_noext, log_erase);
+	          optimizeFile(filename_noext, logfile_);
 	        }
 	
-	        MoveFile(filename_noext);
+            if (settings_.getSettingsParam(SettingsMode::DESTINATION) != "Destination equals source")
+            {
+              MoveFile(filename_noext);
+            }
 	      }
 	      else
 	      {
@@ -293,7 +292,7 @@ int StartMode::executeCommand()
 	        failed_items++;
 	      }
 	
-	      remove("/opt/tmp/poisonXprobelist");
+	      remove("/tmp/poisonXprobelist");
 	
 	      maps_.clear();
 	      targets_.clear();
@@ -306,7 +305,7 @@ int StartMode::executeCommand()
 	      analyze_.clearEverything();
 	      ui_.writeString("Finished job ", false, "red");
 	      ui_.writeString(important_files_.at(job), true, "red");
-	      if(settings_.getSettingsParam(DELETESET) == "Yes" &&
+	      if(settings_.getSettingsParam(SettingsMode::DELETESET) == "Yes" &&
 	         conversion_success)
 	      {
 	        remove(old_filename.c_str());
@@ -353,7 +352,7 @@ int StartMode::gettingInfos(string const& filename, string& movie_duration)
   string tmp_cmd = "ffprobe -print_format compact -show_streams \"";
   
   tmp_cmd.append(filename);
-  tmp_cmd.append("\" &> /opt/tmp/poisonXprobelist");
+  tmp_cmd.append("\" &> /tmp/poisonXprobelist");
 
   system(tmp_cmd.c_str());
   fileman_.readProperties(filename, movie_duration);
@@ -733,12 +732,17 @@ void StartMode::optimizeFile(string& filename, string erase_log)
 
 void StartMode::WriteLog(string message)
 {
-  string out = "echo \"";
+  ofstream logfile;
+  logfile.open(logfile_.c_str(), ios_base::app);
   
-  message.append(logfile_);
-  out.append(message);
-
-  system(out.c_str());
+  if (logfile.is_open())
+  {
+    logfile << message;
+  }
+  else
+  {
+    ui_.writeString("Could not write to logfile: " + logfile_ + "!", true, "yellow");
+  }
 }
 
 void StartMode::WriteLogHeader(int job)
@@ -872,7 +876,7 @@ void StartMode::WriteLogOptimize()
 void StartMode::MoveFile(string filename_full_path)
 {
   string move_file = "mv \"";
-  string movie_destination = settings_.getSettingsParam(DESTINATION);
+  string movie_destination = settings_.getSettingsParam(SettingsMode::DESTINATION);
   string filename_without_path = filename_full_path.substr(filename_full_path.find_last_of("/"));
   
   move_file.append(filename_full_path);

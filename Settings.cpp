@@ -37,7 +37,7 @@ Settings::~Settings()
 {
 }
 
-const string Settings::setParam()
+string const Settings::setParam()
 {
   string new_param;
   
@@ -46,35 +46,34 @@ const string Settings::setParam()
   {
     new_param = ui_.readString();
     
-  } while (checkParam(new_param) != 0);
+    if (new_param == "exit")
+    {
+      return settings_param_;
+    }
+
+  } while (checkParam(new_param, true) == PARAM_CHANGE_ERROR);
   
+  changeParam(new_param);
+
   ui_.writeString("Saved.", true, "green");
   ui_.readString(false);
   
   return settings_param_;
 }
 
-const int Settings::checkParam(string new_param)
+Settings::PARAM_CHANGE_RETURN Settings::setParamSilent(string const& new_param)
 {
-  if(new_param != "")
+  PARAM_CHANGE_RETURN param_change_ret = checkParam(new_param, false);
+
+  if (param_change_ret == PARAM_CHANGE_SUCCESS)
   {
-    settings_param_ = new_param;
-  } else
-  {
-    ui_.writeString("Please enter the name of the config-file", true);
-    return -1;
+    changeParam(new_param);
   }
-  return 0;
+
+  return param_change_ret;
 }
 
-const int Settings::writeParam(string new_param)
+void Settings::changeParam(string const& new_param)
 {
-  if (new_param != "")
-  {
-    settings_param_ = new_param;
-
-    return 0;
-  }
-
-  return -1;
+  settings_param_ = new_param;
 }

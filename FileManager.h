@@ -42,11 +42,12 @@ public:
   virtual      ~FileManager();
 
   int           readSettings() throw (FileReadException, OpenFileException);
-  
   void          saveSettingsToFile() throw(FileWriteException);
+    
   void          readPreferences() throw (FileReadException, OpenFileException);
-  int          savePreferencesToFile() throw(FileWriteException);
-  string           checkPathToConfig();
+  int           savePreferencesToFile() throw(FileWriteException);
+    
+  string        checkPathToConfig();
   void          readImportantFiles(vector<string>& filenames) throw (FileReadException, 
                                                                       OpenFileException);
   void          readProperties(string filename, string& duration) throw (FileReadException, OpenFileException);

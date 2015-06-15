@@ -21,17 +21,20 @@
 #include "UserInterface.h"
 #include "YesNoSetting.h"
 #include "FolderSetting.h"
+#include "DestinationFolderSetting.h"
+#include "FileSetting.h"
      
 SettingsMode::SettingsMode(UserInterface& ui)
-: Mode(ui)
+: Mode(ui), there_were_changes_to_settings_(false)
 {
   //----------------------------------------------------------------------------
   //initialize settings
-  settings_vector_.push_back(new Settings(ui, "config-file", "Selecting filename of config - file", 
-  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "EmptyConfig"));
+  settings_vector_.push_back(new FileSetting(ui, "config-file", "Select filename of config - file",
+  "Please enter the filename of the configuration-file (if it does not exist it will be created)", "EmptyConfig",
+  "Please enter the name of the config-file"));
   
   settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
-  "Please enter the path to the configuration-file", "/opt/etc/PoisonConvert_Config-files/"));
+  "Please enter the path to the configuration-file", "/etc/PoisonConvert_Config-files/"));
     
   settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
   "Do you want to delete the original file after the successful conversion ([y/n])?", "No"));
@@ -39,14 +42,13 @@ SettingsMode::SettingsMode(UserInterface& ui)
   settings_vector_.push_back(new YesNoSetting(ui, "optimize", "Optimize file for streaming (mp4/m4v/mov only)",
   "Do you want to optimize file for streaming (mov/mp4/m4v only , [y/n])?", "No"));
  
-  settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location for saved logfiles",
+  settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location of logfiles",
   "Please enter the path where logfiles should be saved", ""));
   
   settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
   "Please enter the path where poisonconvert should look after files", ""));
   
-  settings_vector_.push_back(new FolderSetting(ui, "destination", "Where to save processed movies",
-  "Please enter the path where poisonconvert should save processed movies", ""));
+  settings_vector_.push_back(new DestinationFolderSetting(ui));
   //----------------------------------------------------------------------------
 }
 
@@ -80,11 +82,36 @@ int SettingsMode::executeCommand()
       if (input_ == settings_vector_.at(i)->getName())
       {
         settings_vector_.at(i)->setParam();
+        there_were_changes_to_settings_ = true;
         going_back = true;
         enter_options_prompt = false;
       } else if (input_ == "exit")
       {
-        return -1;
+        if (there_were_changes_to_settings_)
+        {
+          std::string user_input;
+            
+          ui_.writeString("Do you want that PoisonConvert remembers your settings for the next time ([y/n]) ?", true);
+          do
+          {
+            user_input = ui_.readStringNoCapitalize();
+            if (user_input == "y")
+            {
+              return SAVE_SETTINGS;
+            } else if (user_input == "n")
+            {
+              return DONT_SAVE_SETTINGS;
+            }
+            else
+            {
+              ui_.writeString("Plaese enter [y] for 'yes' and [n] for 'no'!", true);
+            }
+          } while (input_ != "y" && input_ != "n");
+        }
+        else
+        {
+          return DONT_SAVE_SETTINGS;
+        }
       }
     }
     if (enter_options_prompt == true)

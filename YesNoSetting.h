@@ -29,13 +29,10 @@ public:
                            string settings_change_prompt, string default_param);
                 YesNoSetting(const YesNoSetting& orig);
   virtual      ~YesNoSetting();
-  
-  const string setParam();
-  
-  public:
-  
-    const int checkParam(string new_param);
-    const int writeParam(string new_param);
+
+  private:
+  virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
+    void changeParam(string const& new_param);
 };
 
 #endif	/* YESNOSETTING_H */

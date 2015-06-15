@@ -24,23 +24,27 @@
 #include "Settings.h"
 #include <string>
 #include <vector>
-
-//order of variables in enum must be exactly as order of vector element-settings in settings_vector_
-enum { 
-       CONFIGNAME,
-       CONFIGLOC,
-       DELETESET, 
-       OPTIMIZESET,
-       LOGPATH,
-       MOVIEPATH,
-       DESTINATION
-     };
      
 using namespace std;
 class UserInterface;
 
 class SettingsMode : public Mode {
 public:
+    //order of variables in enum must be exactly as order of vector element-settings in settings_vector_
+    enum SETTING_SPECIFIER {
+          CONFIGNAME = 0,
+          CONFIGLOC,
+          DELETESET,
+          OPTIMIZESET,
+          LOGPATH,
+          MOVIEPATH,
+          DESTINATION
+         };
+    
+    enum SAVE_SETTINGS {
+        DONT_SAVE_SETTINGS = -1,
+        SAVE_SETTINGS      = -2
+    };
   
                 SettingsMode(UserInterface& ui);
                 SettingsMode(const SettingsMode& orig);
@@ -48,7 +52,7 @@ public:
   
   int           executeCommand();
 
-  const string getSettingsParam(unsigned int setting_nr)
+  const string getSettingsParam(unsigned int setting_nr) const
   {
     if(setting_nr >= 0)
     {
@@ -75,15 +79,23 @@ public:
     return settings_vector_.size();
   }
   
-  const int writeParam(string new_setting, unsigned int setting_nr)
+  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, SETTING_SPECIFIER setting_nr, bool manually_changed = true)
   {
-    return settings_vector_.at(setting_nr)->writeParam(new_setting);
+    Settings::PARAM_CHANGE_RETURN changes_success = settings_vector_.at(setting_nr)->setParamSilent(new_setting);
+    
+    if (manually_changed && changes_success == Settings::PARAM_CHANGE_SUCCESS)
+    {
+      there_were_changes_to_settings_ = true;
+    }
+    
+    return changes_success;
   }
   
 private:
   
   //----------------------------------------------------------------------------
   vector<Settings*> settings_vector_;
+  bool there_were_changes_to_settings_;
   //----------------------------------------------------------------------------
   
   void          standartExecutePrompt();

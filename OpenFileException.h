@@ -23,7 +23,7 @@
 #include "FileException.h"
 
 
-class OpenFileException : public FileException{
+class OpenFileException : public FileException {
 public:
   
                  OpenFileException();

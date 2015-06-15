@@ -21,6 +21,7 @@
 #include "FileWriteException.h"
 #include "VectorSourceManager.h"
 #include "AnalyzeMedia.h"
+#include "SettingsMode.h"
 #include "Settings.h"
 #include <sstream>
 #include <vector>
@@ -54,9 +55,11 @@ int FileManager::readSettings() throw(FileReadException,
    
   num_settings = setting_.getVectorLen();
   //Head
-  readfile.open("/opt/etc/PoisonConvert_Settings"); // /opt/etc/Settings
+  readfile.open("/etc/PoisonConvert_Settings");
   if (readfile.is_open() == false)
+  {
     throw OpenFileException();
+  }
   getline(readfile, tmp_string, '\n');
   ReadFileError(readfile);
   if (tmp_string != "-----Settings-----")
@@ -68,6 +71,7 @@ int FileManager::readSettings() throw(FileReadException,
   for(unsigned int i=0; i<num_settings; i++)
   {
     getline(readfile, tmp_string, ' ');
+
     ReadFileError(readfile);
     if (tmp_string != setting_.getSettingsName(i))
     {
@@ -75,8 +79,9 @@ int FileManager::readSettings() throw(FileReadException,
       throw FileReadException();
     }
     getline(readfile, tmp_setting, '\n');
+
     ReadFileError(readfile);
-    if (setting_.writeParam(tmp_setting, i) == -1)
+    if (setting_.writeParam(tmp_setting, SettingsMode::SETTING_SPECIFIER(i), false) == Settings::PARAM_CHANGE_ERROR)
     {
       throw FileReadException();
     }
@@ -107,7 +112,7 @@ void FileManager::saveSettingsToFile() throw(FileWriteException)
    
   num_settings = setting_.getVectorLen();
   
-  writefile.open("/opt/etc/PoisonConvert_Settings", ostream::out);
+  writefile.open("/etc/PoisonConvert_Settings", ostream::out);
     if (writefile.is_open() == false)
     {
       writefile.close();
@@ -142,7 +147,7 @@ void FileManager::ReadFileError(ifstream& readfile) throw(FileReadException)
 int FileManager::savePreferencesToFile() throw(FileWriteException)
 {
   ofstream writefile;
-  string filename = setting_.getSettingsParam(CONFIGNAME);
+  string filename = setting_.getSettingsParam(SettingsMode::CONFIGNAME);
   string config_file;
   unsigned int identifier = 0;
   
@@ -193,7 +198,7 @@ int FileManager::savePreferencesToFile() throw(FileWriteException)
 
 string FileManager::checkPathToConfig()
 {
-  string config_file = setting_.getSettingsParam(CONFIGLOC);
+  string config_file = setting_.getSettingsParam(SettingsMode::CONFIGLOC);
 
   return config_file;
 }
@@ -224,8 +229,8 @@ void FileManager::readPreferences() throw (FileReadException, OpenFileException)
 {
   ifstream readfile;
   string tmp_string;
-  string filename = setting_.getSettingsParam(CONFIGNAME);
-  string config_file = setting_.getSettingsParam(CONFIGLOC);
+  string filename = setting_.getSettingsParam(SettingsMode::CONFIGNAME);
+  string config_file = setting_.getSettingsParam(SettingsMode::CONFIGLOC);
   
   config_file.append(filename);
   
@@ -410,7 +415,7 @@ void FileManager::readImportantFiles(vector<string>& filenames) throw (FileReadE
   ifstream readfile;
   string tmp_filename = "start";
   
-  readfile.open("/opt/tmp/poisonXfileslist");
+  readfile.open("/tmp/poisonXfileslist");
   if (readfile.is_open() == false)
   {
     readfile.close();
@@ -432,7 +437,7 @@ void FileManager::readProperties(string filename, string& duration) throw (FileR
   string outter_bitrate;
   string params[5] = {"poison"};
   
-  readfile.open("/opt/tmp/poisonXprobelist");
+  readfile.open("/tmp/poisonXprobelist");
   if (readfile.is_open() == false)
   {
     readfile.close();

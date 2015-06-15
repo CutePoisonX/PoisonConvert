@@ -30,29 +30,37 @@ public:
                   Settings(UserInterface ui, string name, string description, 
                            string settings_change_prompt, string default_param);
                   Settings(const Settings& orig);
-    virtual      ~Settings();
+  virtual         ~Settings();
   
-  const string getName() 
+  enum PARAM_CHANGE_RETURN
+	{
+  	PARAM_CHANGE_SUCCESS,
+		PARAM_CHANGE_ERROR,
+		EXIT_SETTING
+	};
+
+  string const getName()
   {
     return settings_name_;
   }
   
-  const string getParam() 
+  string const getParam()
   {
     return settings_param_;
   }
 
-  const string getDescription() 
+  string const getDescription()
   {
     return settings_description_;
   }
   
-  virtual const string setParam();
-  virtual const int writeParam(string new_param);
+  virtual string const setParam();
+  virtual PARAM_CHANGE_RETURN setParamSilent(string const& new_param);
   
 protected:
   
-  virtual const int checkParam(string new_param);
+  virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output) = 0;
+  virtual void changeParam(string const& new_param);
   
   UserInterface&    ui_;
   
