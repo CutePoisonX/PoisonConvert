@@ -176,6 +176,8 @@ int StartMode::executeCommand()
   unsigned int position = 0;
   unsigned int job = 0;
   unsigned int failed_items = 0;
+    
+  important_files_.clear();
   
   if (vecman_.getVectorLen(SRCVIDEO) == 0)
   {
@@ -737,6 +739,7 @@ void StartMode::WriteLog(string message)
   
   if (logfile.is_open())
   {
+    logfile << "\n";
     logfile << message;
   }
   else
