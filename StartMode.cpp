@@ -204,8 +204,15 @@ int StartMode::executeCommand()
       string filename_without_path = important_files_.at(job).substr(important_files_.at(job).find_last_of("/") + 1);
         
       logfile_ = settings_.getSettingsParam(SettingsMode::LOGPATH);
-      logfile_.append(filename_without_path);
-      logfile_.append(".log");
+      if (logfile_.empty())
+      {
+        logfile_ = "/dev/null";
+      }
+      else
+      {
+        logfile_.append(filename_without_path);
+        logfile_.append(".log");
+      }
       
       WriteLogHeader(job);
       
@@ -734,6 +741,11 @@ void StartMode::optimizeFile(string& filename, string erase_log)
 
 void StartMode::WriteLog(string message)
 {
+  if (logfile_ == "/dev/null")
+  {
+    return;
+  }
+    
   ofstream logfile;
   logfile.open(logfile_.c_str(), ios_base::app);
   

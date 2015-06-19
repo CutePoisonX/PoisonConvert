@@ -114,6 +114,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
     TCLAP::ValueArg<std::string> movie_path_arg("m", settingsmode.getSettingsName(SettingsMode::MOVIEPATH), "Where to look for movies.", false, settingsmode.getSettingsParam(SettingsMode::MOVIEPATH), "path");
     TCLAP::ValueArg<std::string> dest_path_arg("d", settingsmode.getSettingsName(SettingsMode::DESTINATION), "Where to save processed movies.", false, settingsmode.getSettingsParam(SettingsMode::DESTINATION), "path");
 
+    cmd.add(start_arg);
     cmd.add(conf_file_arg);
     cmd.add(conf_path_arg);
     cmd.add(ffmpeg_cmd_arg);
@@ -154,11 +155,11 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
     config_files = conf_file_arg.getValue();  //the config files get checked later if they exist, etc ...
     if (start_arg.getValue())
     {
-    	return true;
+      return true;
     }
     else
     {
-    	return false;
+      return false;
     }
   }
   catch(std::exception const& except)
@@ -190,13 +191,74 @@ bool readOutPreferenceFile(UserInterface& ui, FileManager& filemanager, VectorSo
   return true;
 }
 
+bool executeStartMode(UserInterface& ui, SettingsMode& settingsmode, StartMode& startmode,
+                      VectorSourceManager& vecman, AnalyzeMedia& analyze, bool automatic_mode)
+{
+  bool settings_fail = false;
+  std::string warning_output_color;
+    
+  if (automatic_mode)
+  {
+    warning_output_color = "red";
+  }
+  else
+  {
+    warning_output_color = "green";
+  }
+    
+  for (int i = 0; i < settingsmode.getVectorLen(); i++)
+  {
+    if (settingsmode.checkParam(static_cast<SettingsMode::SETTING_SPECIFIER>(i), false) == Settings::PARAM_CHANGE_ERROR)
+    {
+      ui.writeString("Invalid setting: ", false, "red");
+      ui.writeString(settingsmode.getSettingsName(i), true, "red");
+      settings_fail = true;
+    }
+  }
+
+  if (settings_fail == true)
+  {
+    ui.writeString("Please enter listed setting(s). Go to 'settings - menu' to do so.", true, warning_output_color);
+    if (automatic_mode == false)
+    {
+      ui.readString(false);
+    }
+    return false;
+  }
+  if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
+      vecman.getVectorLen(SRCSUB) != 0)
+  {
+    if (settings_fail == false)
+    {
+      try
+      {
+        startmode.executeCommand();
+      } catch (exception)
+      {
+        ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
+        analyze.clearAllInstances();
+        vecman.clearAllInstances();
+        return -1;
+      }
+      return true;
+    }
+  } else
+  {
+    ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, warning_output_color);
+    if (automatic_mode == false)
+    {
+      ui.readString(false);
+    }
+    return false;
+  }
+}
+
 bool startInNormalMode(UserInterface& ui, FileManager& filemanager, VectorSourceManager& vecman,
                        SettingsMode& settingsmode, StartMode& startmode, AnalyzeMedia& analyze,
                        ConfigMode& configmode)
 {
   string input;
   bool going_back = true;
-  bool settings_fail = false;
 
   if (readOutPreferenceFile(ui, filemanager, vecman) == false)
   {
@@ -234,46 +296,8 @@ bool startInNormalMode(UserInterface& ui, FileManager& filemanager, VectorSource
     input = ui.readStringNoCapitalize();
     if (input == "start")
     {
-      settings_fail = false;
-      for (int i = 0; i < settingsmode.getVectorLen(); i++)
-      {
-        if (settingsmode.checkParam(static_cast<SettingsMode::SETTING_SPECIFIER>(i), false) == Settings::PARAM_CHANGE_ERROR)
-        {
-          ui.writeString("Invalid setting: ", false, "red");
-          ui.writeString(settingsmode.getSettingsName(i), true, "red");
-          settings_fail = true;
-        }
-      }
-
-      if (settings_fail == true)
-      {
-        ui.writeString("Please enter listed setting(s). Go to 'settings - menu' to do so.", true, "green");
-        ui.readString(false);
-        going_back = false;
-      }
-      if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
-          vecman.getVectorLen(SRCSUB) != 0)
-      {
-        if (settings_fail == false)
-        {
-          try
-          {
-            startmode.executeCommand();
-          } catch (exception)
-          {
-            ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-            analyze.clearAllInstances();
-            vecman.clearAllInstances();
-            return -1;
-          }
-          going_back = true;
-        }
-      } else
-      {
-        ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, "green");
-        ui.readString(false);
-        going_back = false;
-      }
+      going_back = executeStartMode(ui, settingsmode, startmode, vecman, analyze, false);
+        
     } else if (input == "config")
     {
       try
@@ -367,35 +391,19 @@ int main(int argc, char** argv)
 
   if (immediate_start)
   {
+    if (config_files.empty())
+    {
+      config_files.push_back(settingsmode.getSettingsParam(SettingsMode::CONFIGNAME)); //using default config file
+    }
     for (unsigned int config_file_nr = 0; config_file_nr < config_files.size(); ++config_file_nr)
     {
       std::string config_file = config_files[config_file_nr];
       settingsmode.writeParam(config_file, SettingsMode::CONFIGNAME);
 
-      ui.writeString("Processing config-file: " + config_file, false);
+      ui.writeString("Processing config-file: " + config_file, true);
       if (readOutPreferenceFile(ui, filemanager, vecman) == true)
       {
-        if (vecman.getVectorLen(SRCVIDEO) != 0 || vecman.getVectorLen(SRCAUDIO) != 0 ||
-            vecman.getVectorLen(SRCSUB) != 0)
-        {
-          try
-          {
-            startmode.executeCommand();
-            analyze.clearAllInstances();
-            vecman.clearAllInstances();
-          } catch (exception)
-          {
-            ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
-            analyze.clearAllInstances();
-            vecman.clearAllInstances();
-            return -1;
-          }
-        } else
-        {
-          ui.writeString("Cannot start. Config-file has no rules.", true, "red");
-          analyze.clearAllInstances();
-          vecman.clearAllInstances();
-        }
+        executeStartMode(ui, settingsmode, startmode, vecman, analyze, true);
       }
       ui.writeString("", true);
     }
@@ -405,8 +413,9 @@ int main(int argc, char** argv)
     ui.writeString("Illegal option: " + settingsmode.getSettingsName(SettingsMode::CONFIGNAME) + ". Multiple config files are only allowed in start-mode (invoke with -s or --start).", true, "red");
     return -1;
   }
-  else
+  else if (config_files.empty() == false)
   {
+    settingsmode.writeParam(config_files[0], SettingsMode::CONFIGNAME);
     return startInNormalMode(ui, filemanager, vecman, settingsmode, startmode, analyze, configmode);
   }
 

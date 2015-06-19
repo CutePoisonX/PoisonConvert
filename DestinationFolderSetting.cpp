@@ -46,6 +46,13 @@ void DestinationFolderSetting::changeParam(string const& new_param)
   }
   else
   {
+    size_t position = new_param.find_last_of("/");
+      
     settings_param_ = new_param;
+      
+    if (position != new_param.length() - 1)
+    {
+      settings_param_.append("/");
+    }
   }
 }

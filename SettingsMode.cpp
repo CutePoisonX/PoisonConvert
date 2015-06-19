@@ -48,7 +48,7 @@ SettingsMode::SettingsMode(UserInterface& ui)
   "Please enter the command to invoke ffprobe", "ffprobe", false));
     
   settings_vector_.push_back(new ExecutableFileSetting(ui, "qt-faststart-cmd", "Command for qt-faststart",
-  "Please enter the command to invoke qt-faststart (You can leave this empty if you set optimize to no).", "qt-faststart", true));
+  "Please enter the command to invoke qt-faststart (you can leave this empty if you set optimize to no).", "qt-faststart", true));
     
   settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
   "Do you want to delete the original file after the successful conversion ([yes/no])?", "No"));
@@ -57,7 +57,7 @@ SettingsMode::SettingsMode(UserInterface& ui)
   "Do you want to optimize file for streaming (mov/mp4/m4v only , [yes/no])?", "No"));
  
   settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location of logfiles",
-  "Please enter the path where logfiles should be saved", "", true));
+  "Please enter the path where logfiles should be saved (if you leave this option empty, no logfiles will be created)", "", true));
   
   settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
   "Please enter the path where poisonconvert should look for files", ""));
@@ -111,6 +111,8 @@ int SettingsMode::executeCommand()
             user_input = ui_.readStringNoCapitalize();
             if (user_input == "y")
             {
+              there_were_changes_to_settings_ = false;
+                
               return SAVE_SETTINGS;
             } else if (user_input == "n")
             {
