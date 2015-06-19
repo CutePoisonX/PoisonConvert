@@ -407,6 +407,8 @@ int main(int argc, char** argv)
       }
       ui.writeString("", true);
     }
+      
+    return 0;
   }
   else if (config_files.size() > 1)
   {
@@ -416,10 +418,9 @@ int main(int argc, char** argv)
   else if (config_files.empty() == false)
   {
     settingsmode.writeParam(config_files[0], SettingsMode::CONFIGNAME);
-    return startInNormalMode(ui, filemanager, vecman, settingsmode, startmode, analyze, configmode);
   }
 
   analyze.clearAllInstances();
   vecman.clearAllInstances();
-  return 0;
+  return startInNormalMode(ui, filemanager, vecman, settingsmode, startmode, analyze, configmode);
 }
