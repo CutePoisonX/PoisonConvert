@@ -55,7 +55,7 @@ int FileManager::readSettings() throw(FileReadException,
    
   num_settings = setting_.getVectorLen();
   //Head
-  readfile.open("/etc/PoisonConvert_Settings");
+  readfile.open("/usr/syno/etc/PoisonConvert_Settings");
   if (readfile.is_open() == false)
   {
     throw OpenFileException();
@@ -112,7 +112,7 @@ void FileManager::saveSettingsToFile() throw(FileWriteException)
    
   num_settings = setting_.getVectorLen();
   
-  writefile.open("/etc/PoisonConvert_Settings", ostream::out);
+  writefile.open("/usr/syno/etc/PoisonConvert_Settings", ostream::out);
     if (writefile.is_open() == false)
     {
       writefile.close();

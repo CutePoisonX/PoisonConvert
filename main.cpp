@@ -43,7 +43,7 @@ bool readOutSettingFile(UserInterface& ui, FileManager& filemanager)
     filemanager.readSettings();
   } catch (OpenFileException)
   {
-    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /etc. Please check settings-menu.", true, "red");
+    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /usr/syno/etc/. Please check settings-menu.", true, "red");
     filemanager.saveSettingsToFile();
     ui.readString(false);
     

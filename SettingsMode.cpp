@@ -39,7 +39,7 @@ SettingsMode::SettingsMode(UserInterface& ui)
   "Please enter the name of the config-file"));
   
   settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
-  "Please enter the path to the configuration-file", "/etc/PoisonConvert_Config-files/"));
+  "Please enter the path to the configuration-file", "/usr/syno/etc/PoisonConvert_Config-files/"));
 
   settings_vector_.push_back(new ExecutableFileSetting(ui, "ffmpeg-cmd", "Command for ffmpeg",
   "Please enter the command to invoke ffmpeg", "ffmpeg", false));
