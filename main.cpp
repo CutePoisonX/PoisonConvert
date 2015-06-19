@@ -31,12 +31,34 @@
 #include "AnalyzeMedia.h"
 #include "Settings.h"
 #include "YesNoSetting.h"
-#include <iostream> //TODO
-
  
 using namespace std;
 
 string const version = "1.4";
+
+bool readOutSettingFile(UserInterface& ui, FileManager& filemanager)
+{
+  try
+  {
+    filemanager.readSettings();
+  } catch (OpenFileException)
+  {
+    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /etc. Please check settings-menu.", true, "red");
+    filemanager.saveSettingsToFile();
+    ui.readString(false);
+    
+    return false;
+  } catch (exception)
+  {
+    ui.writeString("There occured an error at reading out the \"Settings\"-file. Please enter settings.", true, "red");
+    ui.writeString("Please check settings-menu.", true, "red");
+    ui.readString(false);
+        
+    return false;
+  }
+    
+  return true;
+}
 
 void setCommandLineSetting(UserInterface& ui, SettingsMode& settingsmode, std::string const& settings_value, SettingsMode::SETTING_SPECIFIER set_spec)
 {
@@ -49,7 +71,7 @@ void setCommandLineSetting(UserInterface& ui, SettingsMode& settingsmode, std::s
   }
 }
 
-bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode& settingsmode, std::vector<std::string>& config_files)
+bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& filemanager, SettingsMode& settingsmode, std::vector<std::string>& config_files)
 {
   bool delete_file_default;
   bool optimize_file_default;
@@ -57,10 +79,10 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
     
   try
   {
-      TCLAP::CmdLine cmd("PoisonConvert version " + version + " is part of the MediaWare Factory collection (http://www.mediaware-factory.com).\n"
-                         "If you experience any bugs, please file an issue on github. For any other feedback, requests, etc. please use the contact form at MediaWare Factories homepage.\n"
-                         "Developed by Christoph Ebner and licensed under the GPLv3 (see: https://www.gnu.org/licenses/gpl, or the COPYING-file distributed with this script)."
-                         , ' ', version);
+    TCLAP::CmdLine cmd("PoisonConvert version " + version + " is part of the MediaWare Factory collection (http://www.mediaware-factory.com).\n"
+                       "If you experience any bugs, please file an issue on github. For any other feedback, requests, etc. please use the contact form at MediaWare Factories homepage.\n"
+                       "Developed by Christoph Ebner and licensed under the GPLv3 (see: https://www.gnu.org/licenses/gpl, or the COPYING-file distributed with this script)."
+                       , ' ', version);
     TCLAP::SwitchArg start_arg("s", "start", "Start converting.", false);
     TCLAP::MultiArg<std::string> conf_file_arg("c", settingsmode.getSettingsName(SettingsMode::CONFIGNAME), "Config file you want to use.", false, "filename");
     TCLAP::ValueArg<std::string> conf_path_arg("p", settingsmode.getSettingsName(SettingsMode::CONFIGLOC), "Path to config files.", false, settingsmode.getSettingsParam(SettingsMode::CONFIGLOC), "path");
@@ -114,23 +136,31 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
     cmd.add(dest_path_arg);
 
     cmd.parse(argc, argv);
-      
-    setCommandLineSetting(ui, settingsmode, conf_path_arg.getValue(), SettingsMode::CONFIGLOC);
-    if (delete_arg.getValue() == true)
+    
+    if (readOutSettingFile(ui, filemanager))
     {
-    	setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::DELETESET);
+      setCommandLineSetting(ui, settingsmode, conf_path_arg.getValue(), SettingsMode::CONFIGLOC);
+      if (delete_arg.getValue() == true)
+      {
+        setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::DELETESET);
+      }
+      if (optimize_arg.getValue() == true)
+      {
+        setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::OPTIMIZESET);
+      }
+      setCommandLineSetting(ui, settingsmode, ffmpeg_cmd_arg.getValue(), SettingsMode::FFMPEG_CMD);
+      setCommandLineSetting(ui, settingsmode, ffprobe_cmd_arg.getValue(), SettingsMode::FFPROBE_CMD);
+      setCommandLineSetting(ui, settingsmode, qt_cmd_arg.getValue(), SettingsMode::QT_CMD);
+      setCommandLineSetting(ui, settingsmode, log_path_arg.getValue(), SettingsMode::LOGPATH);
+      setCommandLineSetting(ui, settingsmode, movie_path_arg.getValue(), SettingsMode::MOVIEPATH);
+      setCommandLineSetting(ui, settingsmode, dest_path_arg.getValue(), SettingsMode::DESTINATION);
     }
-    if (optimize_arg.getValue() == true)
+    else
     {
-    	setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::OPTIMIZESET);
+      ui.writeString("Ignored any command line options.", true, "yellow");
+      return false;
     }
-    setCommandLineSetting(ui, settingsmode, ffmpeg_cmd_arg.getValue(), SettingsMode::FFMPEG_CMD);
-    setCommandLineSetting(ui, settingsmode, ffprobe_cmd_arg.getValue(), SettingsMode::FFPROBE_CMD);
-    setCommandLineSetting(ui, settingsmode, qt_cmd_arg.getValue(), SettingsMode::QT_CMD);
-    setCommandLineSetting(ui, settingsmode, log_path_arg.getValue(), SettingsMode::LOGPATH);
-    setCommandLineSetting(ui, settingsmode, movie_path_arg.getValue(), SettingsMode::MOVIEPATH);
-    setCommandLineSetting(ui, settingsmode, dest_path_arg.getValue(), SettingsMode::DESTINATION);
-
+    
     config_files = conf_file_arg.getValue();  //the config files get checked later if they exist, etc ...
     if (start_arg.getValue())
     {
@@ -146,30 +176,6 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
   	ui.writeString(except.what(), true, "red");
   	exit(-1);
   }
-}
-
-bool readOutSettingFile(UserInterface& ui, FileManager& filemanager)
-{
-  try
-  {
-    filemanager.readSettings();
-  } catch (OpenFileException)
-  {
-    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /etc. Please check settings-menu.", true, "red");
-    filemanager.saveSettingsToFile();
-    ui.readString(false);
-
-    return false;
-  } catch (exception)
-  {
-    ui.writeString("There occured an error at reading out the \"Settings\"-file. Please enter settings.", true, "red");
-    ui.writeString("Please check settings-menu.", true, "red");
-    ui.readString(false);
-
-    return false;
-  }
-
-  return true;
 }
 
 bool readOutPreferenceFile(UserInterface& ui, FileManager& filemanager, VectorSourceManager& vecman)
@@ -367,15 +373,7 @@ int main(int argc, char** argv)
   FileManager filemanager(settingsmode, vecman, analyze);
   StartMode startmode(ui, vecman, filemanager, analyze, settingsmode);
 
-  if (readOutSettingFile(ui, filemanager))
-  {
-  	immediate_start = parseCmdLineOptions(argc, argv, ui, settingsmode, config_files);
-  }
-  else
-  {
-    ui.writeString("Ignored any command line options.", true, "yellow");
-    immediate_start = false;
-  }
+  immediate_start = parseCmdLineOptions(argc, argv, ui, filemanager, settingsmode, config_files);
 
   if (immediate_start)
   {
