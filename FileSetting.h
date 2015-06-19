@@ -34,9 +34,9 @@ public:
                   FileSetting(const Settings& orig);
     virtual      ~FileSetting();
 
-protected:
     virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
 
+private:
     string error_promp_str_;
   
 };

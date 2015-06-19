@@ -15,8 +15,9 @@ class DestinationFolderSetting: public FolderSetting {
     DestinationFolderSetting(UserInterface const& ui);
     virtual ~DestinationFolderSetting();
 
-  private:
     virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
+  
+  private:
     void changeParam(string const& new_param);
 };
 

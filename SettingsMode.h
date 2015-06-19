@@ -1,3 +1,4 @@
+
 //
 //    Copyright 2014 CutePoisonX (CutePoisonXI@gmail.com)
 //
@@ -34,9 +35,13 @@ public:
     enum SETTING_SPECIFIER {
           CONFIGNAME = 0,
           CONFIGLOC,
+          FFMPEG_CMD,
+          FFPROBE_CMD,
+          QT_CMD,
           DELETESET,
           OPTIMIZESET,
           LOGPATH,
+          LOGGING,
           MOVIEPATH,
           DESTINATION
          };
@@ -89,6 +94,25 @@ public:
     }
     
     return changes_success;
+  }
+    
+  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, std::string setting_name, bool manually_changed = true)
+  {
+    for (unsigned int setting_num = 0; setting_num < settings_vector_.size(); ++ setting_num)
+    {
+      SETTING_SPECIFIER setting_specifier = static_cast<SETTING_SPECIFIER>(setting_num);
+      if (setting_name == settings_vector_[setting_specifier]->getName())
+      {
+        return writeParam(new_setting, setting_specifier, manually_changed);
+      }
+    }
+
+    return Settings::PARAM_CHANGE_ERROR;
+  }
+    
+  const Settings::PARAM_CHANGE_RETURN checkParam(SETTING_SPECIFIER setting_nr, bool ui_output) const
+  {
+    return settings_vector_.at(setting_nr)->checkParam(ui_output);
   }
   
 private:

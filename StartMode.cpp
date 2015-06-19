@@ -168,7 +168,7 @@ int StartMode::gettingFiles()
 int StartMode::executeCommand()
 {
   bool exit_now = false;
-  string ffmpeg_input = "ffmpeg -i \"";
+  string ffmpeg_input = std::string(settings_.getSettingsParam(SettingsMode::FFMPEG_CMD)) + " -i \"";
   string filename_noext;
   string old_filename;
   string old_fileext;
@@ -243,7 +243,7 @@ int StartMode::executeCommand()
 	      
 	      rename(important_files_.at(job).c_str(), old_filename.c_str());
 	      
-	      ffmpeg_input = "ffmpeg -i \"";
+          ffmpeg_input = std::string(settings_.getSettingsParam(SettingsMode::FFMPEG_CMD)) + " -i \"";
 	      ffmpeg_input.append(old_filename);
 	      ffmpeg_input.append("\"");
 	      ffmpeg_input.append(maps_);
@@ -351,7 +351,7 @@ int StartMode::executeCommand()
 
 int StartMode::gettingInfos(string const& filename, string& movie_duration)
 {
-  string tmp_cmd = "ffprobe -print_format compact -show_streams \"";
+  string tmp_cmd = std::string(settings_.getSettingsParam(SettingsMode::FFPROBE_CMD)) + " -print_format compact -show_streams \"";
   
   tmp_cmd.append(filename);
   tmp_cmd.append("\" &> /tmp/poisonXprobelist");
@@ -704,7 +704,7 @@ void StartMode::optimizeFile(string& filename, string erase_log)
 {
   string new_filename = "\"";
   string filename_no_ext;
-  string qt_start = "qt-faststart \"";
+  string qt_start = std::string(settings_.getSettingsParam(SettingsMode::QT_CMD)) + " \"";
   unsigned int position;
   
   ui_.writeString("  Started optimizing...", true, "yellow");

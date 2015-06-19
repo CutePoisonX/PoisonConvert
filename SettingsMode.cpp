@@ -22,11 +22,16 @@
 #include "YesNoSetting.h"
 #include "FolderSetting.h"
 #include "DestinationFolderSetting.h"
+#include "ExecutableFileSetting.h"
 #include "FileSetting.h"
      
 SettingsMode::SettingsMode(UserInterface& ui)
 : Mode(ui), there_were_changes_to_settings_(false)
 {
+  std::vector<std::string> logging_params;
+  logging_params.push_back("on");
+  logging_params.push_back("off");
+    
   //----------------------------------------------------------------------------
   //initialize settings
   settings_vector_.push_back(new FileSetting(ui, "config-file", "Select filename of config - file",
@@ -35,18 +40,30 @@ SettingsMode::SettingsMode(UserInterface& ui)
   
   settings_vector_.push_back(new FolderSetting(ui, "config-path", "Location of config file",
   "Please enter the path to the configuration-file", "/etc/PoisonConvert_Config-files/"));
+
+  settings_vector_.push_back(new ExecutableFileSetting(ui, "ffmpeg-cmd", "Command for ffmpeg",
+  "Please enter the command to invoke ffmpeg", "ffmpeg", false));
+
+  settings_vector_.push_back(new ExecutableFileSetting(ui, "ffprobe-cmd", "Command for ffprobe",
+  "Please enter the command to invoke ffprobe", "ffprobe", false));
+    
+  settings_vector_.push_back(new ExecutableFileSetting(ui, "qt-faststart-cmd", "Command for qt-faststart",
+  "Please enter the command to invoke qt-faststart (You can leave this empty if you set optimize to no).", "qt-faststart", true));
     
   settings_vector_.push_back(new YesNoSetting(ui, "delete", "Delete original file after conversion",
-  "Do you want to delete the original file after the successful conversion ([y/n])?", "No"));
+  "Do you want to delete the original file after the successful conversion ([yes/no])?", "No"));
   
   settings_vector_.push_back(new YesNoSetting(ui, "optimize", "Optimize file for streaming (mp4/m4v/mov only)",
-  "Do you want to optimize file for streaming (mov/mp4/m4v only , [y/n])?", "No"));
+  "Do you want to optimize file for streaming (mov/mp4/m4v only , [yes/no])?", "No"));
  
   settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location of logfiles",
   "Please enter the path where logfiles should be saved", ""));
+    
+  settings_vector_.push_back(new SelectionSetting(ui, "logging", "Logging",
+  "Logging behaviour, ([on/off])", "Off", logging_params));
   
   settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
-  "Please enter the path where poisonconvert should look after files", ""));
+  "Please enter the path where poisonconvert should look for files", ""));
   
   settings_vector_.push_back(new DestinationFolderSetting(ui));
   //----------------------------------------------------------------------------
@@ -128,7 +145,7 @@ int SettingsMode::listSettings()
   ui_.writeString("--------------------------------------------------------", true);
   for(unsigned int i=0; i < settings_vector_.size(); i++)
   {
-    ui_.writeString(" -> ");  ui_.writeString(settings_vector_.at(i)->getDescription()); 
+    ui_.writeString(" -> ");  ui_.writeString(settings_vector_.at(i)->getDescription());
     ui_.writeString(": "); ui_. writeString(settings_vector_.at(i)->getParam(), true, "green");
   }
   ui_.writeString("--------------------------------------------------------", true);
@@ -149,8 +166,16 @@ void SettingsMode::standartExecutePrompt()
   for(unsigned int i=0; i < settings_vector_.size(); i++)
   {
     ui_.writeString("  [");
-    ui_.writeString(settings_vector_.at(i)->getName(), false, "yellow");
+    if (settings_vector_[i]->checkParam(false) == Settings::PARAM_CHANGE_ERROR)
+    {
+      ui_.writeString(settings_vector_.at(i)->getName(), false, "red");
+    }
+    else
+    {
+      ui_.writeString(settings_vector_.at(i)->getName(), false, "yellow");
+    }
     ui_.writeString("] ");
+
     AlignSpaces(align_len, settings_vector_.at(i)->getName().size());
     ui_.writeString("- ");
     ui_.writeString(settings_vector_.at(i)->getDescription(), true);

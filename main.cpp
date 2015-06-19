@@ -31,6 +31,7 @@
 #include "AnalyzeMedia.h"
 #include "Settings.h"
 #include "YesNoSetting.h"
+#include <iostream> //TODO
 
  
 using namespace std;
@@ -52,6 +53,8 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
 {
   bool delete_file_default;
   bool optimize_file_default;
+  bool logging_default;
+    
   try
   {
       TCLAP::CmdLine cmd("PoisonConvert version " + version + " is part of the MediaWare Factory collection (http://www.mediaware-factory.com).\n"
@@ -61,6 +64,9 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
     TCLAP::SwitchArg start_arg("s", "start", "Start converting.", false);
     TCLAP::MultiArg<std::string> conf_file_arg("c", settingsmode.getSettingsName(SettingsMode::CONFIGNAME), "Config file you want to use.", false, "filename");
     TCLAP::ValueArg<std::string> conf_path_arg("p", settingsmode.getSettingsName(SettingsMode::CONFIGLOC), "Path to config files.", false, settingsmode.getSettingsParam(SettingsMode::CONFIGLOC), "path");
+    TCLAP::ValueArg<std::string> ffmpeg_cmd_arg("F", settingsmode.getSettingsName(SettingsMode::FFMPEG_CMD), "ffmpeg command.", false, settingsmode.getSettingsParam(SettingsMode::FFMPEG_CMD), "path");
+    TCLAP::ValueArg<std::string> ffprobe_cmd_arg("f", settingsmode.getSettingsName(SettingsMode::FFPROBE_CMD), "ffprobe command.", false, settingsmode.getSettingsParam(SettingsMode::FFPROBE_CMD), "path");
+    TCLAP::ValueArg<std::string> qt_cmd_arg("q", settingsmode.getSettingsName(SettingsMode::QT_CMD), "qt-faststart command.", false, settingsmode.getSettingsParam(SettingsMode::QT_CMD), "path");
 
     if (settingsmode.getSettingsParam(SettingsMode::DELETESET) == "Yes")
     {
@@ -81,6 +87,16 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
       optimize_file_default = false;
     }
     TCLAP::SwitchArg optimize_arg("o", settingsmode.getSettingsName(SettingsMode::OPTIMIZESET), "Optimize file for streaming.", optimize_file_default);
+      
+    if (settingsmode.getSettingsParam(SettingsMode::LOGGING) == "On")
+    {
+      logging_default = true;
+    }
+    else
+    {
+      logging_default = false;
+    }
+    TCLAP::SwitchArg logging_arg("L", settingsmode.getSettingsName(SettingsMode::LOGGING), "Logging behaviour.", logging_default);
 
     TCLAP::ValueArg<std::string> log_path_arg("l", settingsmode.getSettingsName(SettingsMode::LOGPATH), "Location of logfiles.", false, settingsmode.getSettingsParam(SettingsMode::LOGPATH), "path");
     TCLAP::ValueArg<std::string> movie_path_arg("m", settingsmode.getSettingsName(SettingsMode::MOVIEPATH), "Where to look for movies.", false, settingsmode.getSettingsParam(SettingsMode::MOVIEPATH), "path");
@@ -88,6 +104,9 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
 
     cmd.add(conf_file_arg);
     cmd.add(conf_path_arg);
+    cmd.add(ffmpeg_cmd_arg);
+    cmd.add(ffprobe_cmd_arg);
+    cmd.add(qt_cmd_arg);
     cmd.add(delete_arg);
     cmd.add(optimize_arg);
     cmd.add(log_path_arg);
@@ -105,6 +124,9 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, SettingsMode&
     {
     	setCommandLineSetting(ui, settingsmode, "Yes", SettingsMode::OPTIMIZESET);
     }
+    setCommandLineSetting(ui, settingsmode, ffmpeg_cmd_arg.getValue(), SettingsMode::FFMPEG_CMD);
+    setCommandLineSetting(ui, settingsmode, ffprobe_cmd_arg.getValue(), SettingsMode::FFPROBE_CMD);
+    setCommandLineSetting(ui, settingsmode, qt_cmd_arg.getValue(), SettingsMode::QT_CMD);
     setCommandLineSetting(ui, settingsmode, log_path_arg.getValue(), SettingsMode::LOGPATH);
     setCommandLineSetting(ui, settingsmode, movie_path_arg.getValue(), SettingsMode::MOVIEPATH);
     setCommandLineSetting(ui, settingsmode, dest_path_arg.getValue(), SettingsMode::DESTINATION);
@@ -219,9 +241,9 @@ bool startInNormalMode(UserInterface& ui, FileManager& filemanager, VectorSource
       settings_fail = false;
       for (int i = 0; i < settingsmode.getVectorLen(); i++)
       {
-        if (settingsmode.getSettingsParam(i) == "")
+        if (settingsmode.checkParam(static_cast<SettingsMode::SETTING_SPECIFIER>(i), false) == Settings::PARAM_CHANGE_ERROR)
         {
-          ui.writeString("Empty setting: ", false, "red");
+          ui.writeString("Invalid setting: ", false, "red");
           ui.writeString(settingsmode.getSettingsName(i), true, "red");
           settings_fail = true;
         }
@@ -389,6 +411,11 @@ int main(int argc, char** argv)
       }
       ui.writeString("", true);
     }
+  }
+  else if (config_files.size() > 1)
+  {
+    ui.writeString("Illegal option: " + settingsmode.getSettingsName(SettingsMode::CONFIGNAME) + ". Multiple config files are only allowed in start-mode (invoke with -s or --start).", true, "red");
+    return -1;
   }
   else
   {

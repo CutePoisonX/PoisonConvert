@@ -22,12 +22,13 @@
 
 YesNoSetting::YesNoSetting(UserInterface ui, string name, string description, 
                            string settings_change_prompt, string default_param)
-: Settings(ui, name, description, settings_change_prompt, default_param)
+: SelectionSetting(ui, name, description, settings_change_prompt, default_param,
+                   generateAllowedSettingsVector())
 {
 }
 
 YesNoSetting::YesNoSetting(const YesNoSetting& orig)
-: Settings(orig)
+: SelectionSetting(orig)
 {
 }
 
@@ -35,39 +36,12 @@ YesNoSetting::~YesNoSetting()
 {
 }
 
-YesNoSetting::PARAM_CHANGE_RETURN YesNoSetting::checkParam(string const& new_param, bool ui_output)
+std::vector<std::string> YesNoSetting::generateAllowedSettingsVector() const
 {
-  if (new_param != "y" && new_param != "n" && new_param != "Yes" && new_param != "No" &&
-      new_param != "yes" && new_param != "no")
-  {
-    if (ui_output)
-    {
-      ui_.writeString("Please enter [y] for 'yes' and [n] for 'no'!", true);
-    }
+  std::vector<std::string> allowed_settings;
 
-    return PARAM_CHANGE_ERROR;
-  }
-  
-  return PARAM_CHANGE_SUCCESS;
-}
-
-void YesNoSetting::changeParam(string const& new_param)
-//We can assume that new_param is either y or n since checkParam was called before ...
-{
-  std::string actual_param;
+  allowed_settings.push_back("yes");
+  allowed_settings.push_back("no");
     
-  if (new_param == "y" || new_param == "yes")
-  {
-    actual_param = "Yes";
-  }
-  else if (new_param == "n" || new_param == "no")
-  {
-    actual_param = "No";
-  }
-  else
-  {
-    actual_param = new_param;
-  }
-    
-  settings_param_ = actual_param;
+  return allowed_settings;
 }

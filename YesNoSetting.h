@@ -20,19 +20,18 @@
 #ifndef YESNOSETTING_H
 #define	YESNOSETTING_H
 
-#include "Settings.h"
+#include "SelectionSetting.h"
 
-class YesNoSetting : public Settings {
+class YesNoSetting : public SelectionSetting {
 public:
   
                 YesNoSetting(UserInterface ui, string name, string description, 
                            string settings_change_prompt, string default_param);
                 YesNoSetting(const YesNoSetting& orig);
   virtual      ~YesNoSetting();
-
-  private:
-  virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
-    void changeParam(string const& new_param);
+    
+private:
+    std::vector<std::string> generateAllowedSettingsVector() const;
 };
 
 #endif	/* YESNOSETTING_H */

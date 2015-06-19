@@ -56,10 +56,14 @@ public:
   
   virtual string const setParam();
   virtual PARAM_CHANGE_RETURN setParamSilent(string const& new_param);
+  virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output) = 0;
+  PARAM_CHANGE_RETURN checkParam(bool ui_output)
+  {
+    return checkParam(settings_param_, ui_output);
+  }
   
 protected:
   
-  virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output) = 0;
   virtual void changeParam(string const& new_param);
   
   UserInterface&    ui_;

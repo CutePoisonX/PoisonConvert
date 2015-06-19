@@ -51,7 +51,7 @@ int FileManager::readSettings() throw(FileReadException,
   unsigned int num_settings;
   ifstream readfile;
   string tmp_setting;
-  string tmp_string; //temporary informations to check if file is corrupt
+  string tmp_string;
    
   num_settings = setting_.getVectorLen();
   //Head
@@ -81,7 +81,7 @@ int FileManager::readSettings() throw(FileReadException,
     getline(readfile, tmp_setting, '\n');
 
     ReadFileError(readfile);
-    if (setting_.writeParam(tmp_setting, SettingsMode::SETTING_SPECIFIER(i), false) == Settings::PARAM_CHANGE_ERROR)
+    if (setting_.writeParam(tmp_setting, tmp_string, false) == Settings::PARAM_CHANGE_ERROR)
     {
       throw FileReadException();
     }
