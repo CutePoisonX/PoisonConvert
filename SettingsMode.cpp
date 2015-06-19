@@ -57,10 +57,7 @@ SettingsMode::SettingsMode(UserInterface& ui)
   "Do you want to optimize file for streaming (mov/mp4/m4v only , [yes/no])?", "No"));
  
   settings_vector_.push_back(new FolderSetting(ui, "log-path", "Location of logfiles",
-  "Please enter the path where logfiles should be saved", ""));
-    
-  settings_vector_.push_back(new SelectionSetting(ui, "logging", "Logging",
-  "Logging behaviour, ([on/off])", "Off", logging_params));
+  "Please enter the path where logfiles should be saved", "", true));
   
   settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
   "Please enter the path where poisonconvert should look for files", ""));

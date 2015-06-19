@@ -25,7 +25,8 @@
 class FolderSetting : public Settings {
 public:
                 FolderSetting(UserInterface ui, string name, string description,
-                           string settings_change_prompt, string default_param);
+                              string settings_change_prompt, string default_param,
+                              bool can_be_empty = false);
                 FolderSetting(const FolderSetting& orig);
   virtual      ~FolderSetting();
   
@@ -33,6 +34,9 @@ public:
     
 protected:
     virtual void changeParam(string const& new_param);
+    
+private:
+    bool can_be_empty_;
 };
 
 #endif	/* FOLDERSETTING_H */

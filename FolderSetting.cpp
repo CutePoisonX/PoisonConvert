@@ -26,8 +26,9 @@
 #include <dirent.h>
 
 FolderSetting::FolderSetting(UserInterface ui, string name, string description, 
-                           string settings_change_prompt, string default_param)
-: Settings(ui, name, description, settings_change_prompt, default_param)
+                             string settings_change_prompt, string default_param,
+                             bool can_be_empty)
+: Settings(ui, name, description, settings_change_prompt, default_param), can_be_empty_(can_be_empty)
 {
 }
 
@@ -43,7 +44,8 @@ FolderSetting::~FolderSetting()
 FolderSetting::PARAM_CHANGE_RETURN FolderSetting::checkParam(string const& new_param, bool ui_output)
 {
   struct stat folder_check;
-  if (stat(new_param.c_str(), &folder_check) != 0 || S_ISDIR(folder_check.st_mode) == false)
+  if (((can_be_empty_ && new_param.empty())) == false &&
+      (stat(new_param.c_str(), &folder_check) != 0 || S_ISDIR(folder_check.st_mode) == false))
   {
     if (ui_output)
     {

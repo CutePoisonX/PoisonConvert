@@ -41,7 +41,6 @@ public:
           DELETESET,
           OPTIMIZESET,
           LOGPATH,
-          LOGGING,
           MOVIEPATH,
           DESTINATION
          };

@@ -75,7 +75,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
 {
   bool delete_file_default;
   bool optimize_file_default;
-  bool logging_default;
+  bool reading_out_settings_succeeded = readOutSettingFile(ui, filemanager);
     
   try
   {
@@ -109,16 +109,6 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
       optimize_file_default = false;
     }
     TCLAP::SwitchArg optimize_arg("o", settingsmode.getSettingsName(SettingsMode::OPTIMIZESET), "Optimize file for streaming.", optimize_file_default);
-      
-    if (settingsmode.getSettingsParam(SettingsMode::LOGGING) == "On")
-    {
-      logging_default = true;
-    }
-    else
-    {
-      logging_default = false;
-    }
-    TCLAP::SwitchArg logging_arg("L", settingsmode.getSettingsName(SettingsMode::LOGGING), "Logging behaviour.", logging_default);
 
     TCLAP::ValueArg<std::string> log_path_arg("l", settingsmode.getSettingsName(SettingsMode::LOGPATH), "Location of logfiles.", false, settingsmode.getSettingsParam(SettingsMode::LOGPATH), "path");
     TCLAP::ValueArg<std::string> movie_path_arg("m", settingsmode.getSettingsName(SettingsMode::MOVIEPATH), "Where to look for movies.", false, settingsmode.getSettingsParam(SettingsMode::MOVIEPATH), "path");
@@ -137,7 +127,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
 
     cmd.parse(argc, argv);
     
-    if (readOutSettingFile(ui, filemanager))
+    if (reading_out_settings_succeeded)
     {
       setCommandLineSetting(ui, settingsmode, conf_path_arg.getValue(), SettingsMode::CONFIGLOC);
       if (delete_arg.getValue() == true)
