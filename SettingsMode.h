@@ -113,6 +113,20 @@ public:
   {
     return settings_vector_.at(setting_nr)->checkParam(ui_output);
   }
+    
+  bool checkIfSettingExists(std::string const& setting_name)
+  {
+    for (unsigned int setting_num = 0; setting_num < settings_vector_.size(); ++ setting_num)
+    {
+      SETTING_SPECIFIER setting_specifier = static_cast<SETTING_SPECIFIER>(setting_num);
+      if (setting_name == settings_vector_[setting_specifier]->getName())
+      {
+        return true;
+      }
+    }
+    
+    return false;
+  }
   
 private:
   

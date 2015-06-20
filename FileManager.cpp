@@ -45,17 +45,17 @@ FileManager::~FileManager()
 {
 }
 
-int FileManager::readSettings() throw(FileReadException,
-                                      OpenFileException)
+bool FileManager::readSettings() throw(FileReadException,
+                                       OpenFileException)
 { 
   unsigned int num_settings;
+  bool all_settings_succeeded = true;
   ifstream readfile;
-  string tmp_setting;
   string tmp_string;
    
   num_settings = setting_.getVectorLen();
   //Head
-  readfile.open("/usr/syno/etc/PoisonConvert_Settings");
+  readfile.open("/usr/syno/etc/poisonconvert/PoisonConvert_Settings");
   if (readfile.is_open() == false)
   {
     throw OpenFileException();
@@ -68,41 +68,46 @@ int FileManager::readSettings() throw(FileReadException,
     throw FileReadException();
   }
   
-  for(unsigned int i=0; i<num_settings; i++)
+  for(unsigned int i=0; i<=num_settings; i++)
   {
-    getline(readfile, tmp_string, ' ');
-
+    std::string setting_name;
+    std::string setting_value;
+      
+    getline(readfile, tmp_string, '\n');
     ReadFileError(readfile);
-    if (tmp_string != setting_.getSettingsName(i))
+      
+    if (tmp_string == "-----Settings-----")
+    {
+      getline(readfile, tmp_string, '\n');
+      if (readfile.eof() != true)
+      {
+        readfile.close();
+        throw FileReadException();
+      }
+        
+      return all_settings_succeeded;
+    }
+    
+    setting_name  = tmp_string.substr(0, tmp_string.find(" "));
+    setting_value = tmp_string.substr(tmp_string.find(" ") + 1);
+    
+    if (setting_.checkIfSettingExists(setting_name) == false)
     {
       readfile.close();
       throw FileReadException();
     }
-    getline(readfile, tmp_setting, '\n');
 
-    ReadFileError(readfile);
-    if (setting_.writeParam(tmp_setting, tmp_string, false) == Settings::PARAM_CHANGE_ERROR)
+    if (setting_.writeParam(setting_value, setting_name, false) == Settings::PARAM_CHANGE_ERROR)
     {
-      throw FileReadException();
+      all_settings_succeeded = false;
     }
   }
 
-  //End of settings
-  getline(readfile, tmp_string, '\n');
-  ReadFileError(readfile);
-  if (tmp_string != "-----Settings-----")
-  {
-    readfile.close();
-    throw FileReadException();
-  }
-  
-  getline(readfile, tmp_string, '\n');
-  if (readfile.eof() != true)
-  {
-    readfile.close();
-    throw FileReadException();
-  }
+  //should never reach this line
   readfile.close();
+  throw FileReadException();
+    
+  return all_settings_succeeded;
 }
 
 void FileManager::saveSettingsToFile() throw(FileWriteException)
@@ -112,12 +117,12 @@ void FileManager::saveSettingsToFile() throw(FileWriteException)
    
   num_settings = setting_.getVectorLen();
   
-  writefile.open("/usr/syno/etc/PoisonConvert_Settings", ostream::out);
-    if (writefile.is_open() == false)
-    {
-      writefile.close();
-      throw FileWriteException();
-    }
+  writefile.open("/usr/syno/etc/poisonconvert/PoisonConvert_Settings", ostream::out);
+  if (writefile.is_open() == false)
+  {
+    writefile.close();
+    throw FileWriteException();
+  }
   
   //Head
   writefile << "-----Settings-----" << endl;

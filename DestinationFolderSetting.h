@@ -18,7 +18,7 @@ class DestinationFolderSetting: public FolderSetting {
     virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
   
   private:
-    void changeParam(string const& new_param);
+    void attemptToChangeParam(string new_param);
 };
 
 #endif /* DESTINATIONFOLDERSETTING_H_ */

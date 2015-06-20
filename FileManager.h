@@ -41,7 +41,7 @@ public:
                 FileManager(const FileManager& orig);
   virtual      ~FileManager();
 
-  int           readSettings() throw (FileReadException, OpenFileException);
+  bool          readSettings() throw (FileReadException, OpenFileException);
   void          saveSettingsToFile() throw(FileWriteException);
     
   void          readPreferences() throw (FileReadException, OpenFileException);

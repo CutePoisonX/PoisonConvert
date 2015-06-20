@@ -57,7 +57,7 @@ FolderSetting::PARAM_CHANGE_RETURN FolderSetting::checkParam(string const& new_p
   return PARAM_CHANGE_SUCCESS;
 }
 
-void FolderSetting::changeParam(string const& new_param)
+void FolderSetting::attemptToChangeParam(string new_param)
 {
   string new_writable_param = new_param;
   size_t position = new_writable_param.find_last_of("/");
@@ -67,5 +67,5 @@ void FolderSetting::changeParam(string const& new_param)
     new_writable_param.append("/");
   }
 
-  settings_param_ = new_writable_param;
+  changeParam(new_writable_param);
 }

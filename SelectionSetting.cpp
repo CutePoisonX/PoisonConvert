@@ -39,15 +39,13 @@ SelectionSetting::~SelectionSetting()
 {
 }
 
-void SelectionSetting::changeParam(string const& new_param)
+void SelectionSetting::attemptToChangeParam(string new_param)
 {
-  std::string new_param_first_up = new_param;
-  
-  new_param_first_up[0] = toupper(new_param_first_up[0]);
-  std::transform(new_param_first_up.begin() + 1, new_param_first_up.end(), new_param_first_up.begin() + 1,
-                   ::tolower);
+  new_param[0] = toupper(new_param[0]);
+  std::transform(new_param.begin() + 1, new_param.end(), new_param.begin() + 1,
+                 ::tolower);
     
-  settings_param_ = new_param_first_up;
+  changeParam(new_param);
 }
 
 Settings::PARAM_CHANGE_RETURN SelectionSetting::checkParam(string const& new_param, bool ui_output)

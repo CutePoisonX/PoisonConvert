@@ -22,8 +22,8 @@
 
 Settings::Settings(UserInterface ui, string name, string description, 
                    string settings_change_prompt, string default_param)
-: ui_(ui), settings_name_(name), settings_description_(description), 
-  settings_change_prompt_(settings_change_prompt), settings_param_(default_param)
+: ui_(ui), settings_name_(name), settings_description_(description),
+  settings_change_prompt_(settings_change_prompt), settings_param_(default_param), settings_default_param_(default_param)
 {
 }
 
@@ -53,7 +53,7 @@ string const Settings::setParam()
 
   } while (checkParam(new_param, true) == PARAM_CHANGE_ERROR);
   
-  changeParam(new_param);
+  attemptToChangeParam(new_param);
 
   ui_.writeString("Saved.", true, "green");
   ui_.readString(false);
@@ -67,10 +67,15 @@ Settings::PARAM_CHANGE_RETURN Settings::setParamSilent(string const& new_param)
 
   if (param_change_ret == PARAM_CHANGE_SUCCESS)
   {
-    changeParam(new_param);
+    attemptToChangeParam(new_param);
   }
 
   return param_change_ret;
+}
+
+void Settings::attemptToChangeParam(string new_param)
+{
+  changeParam(new_param);
 }
 
 void Settings::changeParam(string const& new_param)

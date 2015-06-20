@@ -33,7 +33,7 @@ public:
   virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
     
 protected:
-    virtual void changeParam(string const& new_param);
+    virtual void attemptToChangeParam(string new_param);
     
 private:
     bool can_be_empty_;

@@ -36,23 +36,24 @@ using namespace std;
 
 string const version = "1.4";
 
-bool readOutSettingFile(UserInterface& ui, FileManager& filemanager)
+bool readOutSettingFile(UserInterface& ui, FileManager& filemanager, std::string& settings_error_msg)
 {
   try
   {
-    filemanager.readSettings();
+    if (filemanager.readSettings() == false)
+    {
+      settings_error_msg = "There occured an error at reading out the \"Settings\"-file (some settings were corrupt). Please check settings-menu.";
+      return false;
+    }
   } catch (OpenFileException)
   {
-    ui.writeString("Created default settings-file \"PoisonConvert_Settings\" in /usr/syno/etc/. Please check settings-menu.", true, "red");
+    settings_error_msg = "Created default settings-file \"PoisonConvert_Settings\" in /usr/syno/etc/poisonconvert/. Please check settings-menu.";
     filemanager.saveSettingsToFile();
-    ui.readString(false);
     
     return false;
   } catch (exception)
   {
-    ui.writeString("There occured an error at reading out the \"Settings\"-file. Please enter settings.", true, "red");
-    ui.writeString("Please check settings-menu.", true, "red");
-    ui.readString(false);
+    settings_error_msg = "There occured an error at reading out the \"Settings\"-file. Please check settings-menu.";
         
     return false;
   }
@@ -73,9 +74,10 @@ void setCommandLineSetting(UserInterface& ui, SettingsMode& settingsmode, std::s
 
 bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& filemanager, SettingsMode& settingsmode, std::vector<std::string>& config_files)
 {
+  std::string settings_error_msg;
   bool delete_file_default;
   bool optimize_file_default;
-  bool reading_out_settings_succeeded = readOutSettingFile(ui, filemanager);
+  bool reading_out_settings_succeeded = readOutSettingFile(ui, filemanager, settings_error_msg);
     
   try
   {
@@ -148,6 +150,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
     }
     else
     {
+      ui.writeString(settings_error_msg, true, "red");
       ui.writeString("Ignored any command line options.", true, "yellow");
       return false;
     }
@@ -238,11 +241,12 @@ bool executeStartMode(UserInterface& ui, SettingsMode& settingsmode, StartMode& 
         ui.writeString("It seems that there occured an unknown error. Please report it, so we can fix this bug together.", true, "red");
         analyze.clearAllInstances();
         vecman.clearAllInstances();
-        return -1;
+        return false;
       }
       return true;
     }
-  } else
+  }
+  else
   {
     ui.writeString("You have to specify rules first. Go to 'config - menu' to do so.", true, warning_output_color);
     if (automatic_mode == false)
@@ -403,7 +407,10 @@ int main(int argc, char** argv)
       ui.writeString("Processing config-file: " + config_file, true);
       if (readOutPreferenceFile(ui, filemanager, vecman) == true)
       {
-        executeStartMode(ui, settingsmode, startmode, vecman, analyze, true);
+        if (executeStartMode(ui, settingsmode, startmode, vecman, analyze, true) == false)
+        {
+          return -1;
+        }
       }
       ui.writeString("", true);
     }

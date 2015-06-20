@@ -37,22 +37,22 @@ DestinationFolderSetting::PARAM_CHANGE_RETURN DestinationFolderSetting::checkPar
   }
 }
 
-void DestinationFolderSetting::changeParam(string const& new_param)
+void DestinationFolderSetting::attemptToChangeParam(string new_param)
 //We can assume that new_param is either y or n since checkParam was called before ...
 {
   if (new_param.empty())
   {
-    settings_param_ = "Destination equals source";
+    new_param = "Destination equals source";
   }
   else
   {
     size_t position = new_param.find_last_of("/");
       
-    settings_param_ = new_param;
-      
     if (position != new_param.length() - 1)
     {
-      settings_param_.append("/");
+      new_param.append("/");
     }
   }
+    
+  changeParam(new_param);
 }

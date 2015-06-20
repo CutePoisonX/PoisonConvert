@@ -36,7 +36,7 @@ public:
   virtual Settings::PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output);
 
 private:
-    void changeParam(string const& new_param);
+    void attemptToChangeParam(string new_param);
     std::vector<std::string> const allowed_settings_lc_;
 };
 

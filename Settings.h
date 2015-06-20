@@ -34,7 +34,7 @@ public:
   
   enum PARAM_CHANGE_RETURN
 	{
-  	PARAM_CHANGE_SUCCESS,
+        PARAM_CHANGE_SUCCESS,
 		PARAM_CHANGE_ERROR,
 		EXIT_SETTING
 	};
@@ -48,12 +48,22 @@ public:
   {
     return settings_param_;
   }
+    
+  string const getDefaultParam()
+  {
+    return settings_default_param_;
+  }
 
   string const getDescription()
   {
     return settings_description_;
   }
   
+  void resetSetting()
+  {
+    setParamSilent(settings_default_param_);
+  }
+    
   virtual string const setParam();
   virtual PARAM_CHANGE_RETURN setParamSilent(string const& new_param);
   virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output) = 0;
@@ -64,13 +74,17 @@ public:
   
 protected:
   
-  virtual void changeParam(string const& new_param);
+  virtual void attemptToChangeParam(string new_param);
+          void changeParam(string const& new_param);
   
   UserInterface&    ui_;
   
   const string      settings_name_;
   const string      settings_description_;
   const string      settings_change_prompt_;
+  const string      settings_default_param_;
+    
+private:
         string      settings_param_;
   
 };
