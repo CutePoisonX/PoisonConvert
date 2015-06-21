@@ -427,8 +427,15 @@ int ConfigMode::createRuleAudio()
       codec_not = true;
       param1_.erase(0, 3);
     }
+    if (param1_ == "dts")
+    {
+      ui_.writeString("Note: \"dts\" is actually a shorthand for \"dca\". With the new parsing algorithm introduced in version 1.4.1, you should use dca instead of dts. I will change it for you now...", true, "yellow");
+      param1_ = "dca";
+    }
     if (param1_ == "")
+    {
       ui_.writeString("Please enter something.", true);
+    }
   } while (param1_ == "");
   
   //Channels
