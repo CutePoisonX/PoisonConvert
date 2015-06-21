@@ -83,7 +83,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
   {
     TCLAP::CmdLine cmd("PoisonConvert version " + version + " is part of the MediaWare Factory collection (http://www.mediaware-factory.com).\n"
                        "If you experience any bugs, please file an issue on github. For any other feedback, requests, etc. please use the contact form at MediaWare Factories homepage.\n"
-                       "Developed by Christoph Ebner and licensed under the GPLv3 (see: https://www.gnu.org/licenses/gpl, or the COPYING-file distributed with this script)."
+                       "Developed by Christoph Ebner and licensed under the GPLv3 (see: https://www.gnu.org/licenses/gpl)."
                        , ' ', version);
     TCLAP::SwitchArg start_arg("s", "start", "Start converting.", false);
     TCLAP::MultiArg<std::string> conf_file_arg("c", settingsmode.getSettingsName(SettingsMode::CONFIGNAME), "Config file you want to use.", false, "filename");
