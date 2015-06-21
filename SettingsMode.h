@@ -1,6 +1,6 @@
 
 //
-//    Copyright 2014 CutePoisonX (CutePoisonXI@gmail.com)
+//    Copyright 2015 CutePoisonX (CutePoisonXI@gmail.com)
 //
 //    This file is part of PoisonConvert.
 //
