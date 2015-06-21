@@ -5,8 +5,9 @@ Version 1.4.1   1)  Improved file properties-recognition
 		3)  Fixed bug in logfile where only the first detected stream of each category was displayed
 		4)  Audio channels are from now on processed solely as numbers
 		5)  Due to the new parser, dts is now recognized as dca. Added automatic handling of dca and dts in config files.
-		6)  PoisonConvert now has full command line integration. Every option in the settings can now be changed via command
-		    line for a single session. Invoke PoisonConvert with "-h" or "--help" to get an overview.
+		6)  Thanks to the tclap library, PoisonConvert now has full command line integration. 
+		    Every option in the settings can now be changed via command line for a single session. 
+		    Invoke PoisonConvert with "-h" or "--help" to get an overview.
 		    Note: PoisonConvert direct conversion is now triggered with "-s" or "--start" so adjust your scheduler
 		    accordingly. If you want to specify config files, use "-c" or "--config-files".
 		7)  Synology: PoisonConvert will installed in /usr/syno/bin bin by default and the configuration files are
