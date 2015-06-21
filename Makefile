@@ -1,4 +1,4 @@
-CXX=/media/sf_VM_Shared_Folders/Toolchains/arm-marvell-linux-gnueabi_628x/bin/arm-marvell-linux-gnueabi-g++ -I/media/sf_VM_Shared_Folders/Toolchains/arm-marvell-linux-gnueabi_628x/arm-marvell-linux-gnueabi/libc/include -L/media/sf_VM_Shared_Folders/Toolchains/arm-marvell-linux-gnueabi_628x/arm-marvell-linux-gnueabi/libc/lib -I./tclap-1.2.1/include/
+CXX=g++ -I/opt/include -L/lib/ -I./tclap-1.2.1/include/
 CXXFLAGS=-c -Wall -g
 LDFLAGS=
 SOURCES = $(wildcard *.cpp)
