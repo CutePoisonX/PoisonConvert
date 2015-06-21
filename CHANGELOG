@@ -1,51 +1,64 @@
-Version 1.4.1   1) Improved file properties-recognition
-		2) The not[value] parameter does work now with containers
-		3) Fixed bug where audio and subtitle-stream properties were not detected properly when no language
-		   was specified in the stream
-		3) Fixed bug in logfile where only the first detected stream of each category was displayed
-		4) Audio channels are from now on processed solely as numbers
+Version 1.4.1   1)  Improved file properties-recognition
+		2)  The not[value] parameter does work now with containers
+		3)  Fixed bug where audio and subtitle-stream properties were not detected properly when no language
+		    was specified in the stream
+		3)  Fixed bug in logfile where only the first detected stream of each category was displayed
+		4)  Audio channels are from now on processed solely as numbers
+		5)  Due to the new parser, dts is now recognized as dca. Added automatic handling of dca and dts in config files.
+		6)  PoisonConvert now has full command line integration. Every option in the settings can now be changed via command
+		    line for a single session. Invoke PoisonConvert with "-h" or "--help" to get an overview.
+		    Note: PoisonConvert direct conversion is now triggered with "-s" or "--start" so adjust your scheduler
+		    accordingly. If you want to specify config files, use "-c" or "--config-files".
+		7)  Synology: PoisonConvert will installed in /usr/syno/bin bin by default and the configuration files are
+		    located in /usr/syno/etc/poisonconvert. There is also a installer script that automatically installs
+		    a pre-compiled binary on your DiskStation which means that you don't have to compile it yourself anymore.
+		    Therefore, you are not dependent on ipkg or any toolchain anymore.
+		8)  Added settings to adjust the ffmpeg, ffprobe and qt-faststart command.
+		9)  Logging is now disabled by default (leaving the option: log-path empty).
+		10) Improved "destination" setting: Now you can leave this option empty and PoisonConvert does not move 
+		    your files after successful conversion.
 ------------------------------------------------------------------------------------------
-Version 1.4     1) Added recursive directory scanning for movies
-		2) Config-files are located in /opt/etc/PoisonConvert_Config-files by default
-		3) Added config-file for the chromecast
-		4) Processed files get now only deleted when conversion was successful
-		   (this makes the "delete"-setting saver)
-		   The success is determined by comparing the duration and streams.
-		5) Failed files are reverted automatically (they do not get .old etc.
+Version 1.4     1)  Added recursive directory scanning for movies
+		2)  Config-files are located in /opt/etc/PoisonConvert_Config-files by default
+		3)  Added config-file for the chromecast
+		4)  Processed files get now only deleted when conversion was successful
+		    (this makes the "delete"-setting saver)
+		    The success is determined by comparing the duration and streams.
+		5)  Failed files are reverted automatically (they dor not get .old etc.
 	 	    appended)
-		6) Added makefile installer
-		7) Removed some bad "system" calls
-		8) Added functionality to specify "-" for the container in order to analyze any file
-		9) Bugfixes
-		10) Added licence
+		6)  Added makefile installer
+		7)  Removed some bad "system" calls
+		8)  Added functionality to specify "-" for the container in order to analyze any file
+		9)  Bugfixes
+		10) Added license
 ------------------------------------------------------------------------------------------
-Version 1.3     1) Rewritten settings-behaviour (it is much easier now to add settings)
-                2) Added useful settings
-                3) poisonconvert can now be placed in /opt/bin/ (global scope)
-                4) Enhanced Logfile
-                5) No restart necessary after changing the config-file
-                6) Settings-file is now created in /opt/etc/ and will be created automatically (filename: PoisonConvert_Settings)
-                7) All temporary files are now created in /opt/tmp/
-                8) Changed some prompts
-                9) Bugfixes
+Version 1.3     1)  Rewritten settings-behaviour (it is much easier now to add settings)
+                2)  Added useful settings
+                3)  poisonconvert can now be placed in /opt/bin/ (global scope)
+                4)  Enhanced Logfile
+                5)  No restart necessary after changing the config-file
+                6)  Settings-file is now created in /opt/etc/ and will be created automatically (filename: PoisonConvert_Settings)
+                7)  All temporary files are now created in /opt/tmp/
+                8)  Changed some prompts
+                9)  Bugfixes
 ------------------------------------------------------------------------------------------
-Version 1.2.1 	1) Fixed problem: A space occurred after converting in the .log - filename
-              	2) Fixed a Bug where stereo streams were not detected correctly
+Version 1.2.1 	1)  Fixed problem: A space occurred after converting in the .log - filename
+              	2)  Fixed a Bug where stereo streams were not detected correctly
 ------------------------------------------------------------------------------------------
-Version 1.2 	1) Fixed a Bug where audiocodecs were not detected correctly
-            	2) New function: There will be created a log file with useful ffmpeg output while processing
+Version 1.2 	1)  Fixed a Bug where audiocodecs were not detected correctly
+            	2)  New function: There will be created a log file with useful ffmpeg output while processing
 ------------------------------------------------------------------------------------------
-Version 1.1 	1) Added Support to specify Subtitlecodec as a rule and as target
-            	2) Removing File "NUL" after conversion
-            	3) Fixed a Bug where parameters specified with NOT were also converted
-            	4) Fixed a Bug where Videocodecs were not saved correctly
-            	5) Added the possibility to start with custom preference-files:
-               	   ./poisonconvert start [filename 1] [filename 2] [ ...]
-            	6) Added the possibillity to get the Version of poisonconvert with:
-                  ./poisonconvert version
-            	7) Added: Appending special endings for advanced processing:
-                  "_nv", "_na", "_ns". 
-            	8) Changed some converting prompts 
-            	9) Fixed a Bug where the container was not set properly when the videostream did not match...
+Version 1.1 	1)  Added Support to specify Subtitlecodec as a rule and as target
+            	2)  Removing File "NUL" after conversion
+            	3)  Fixed a Bug where parameters specified with NOT were also converted
+            	4)  Fixed a Bug where Videocodecs were not saved correctly
+            	5)  Added the possibility to start with custom preference-files:
+               	    ./poisonconvert start [filename 1] [filename 2] [ ...]
+            	6)  Added the possibility to get the Version of poisonconvert with:
+                    ./poisonconvert version
+            	7)  Added: Appending special endings for advanced processing:
+                    "_nv", "_na", "_ns". 
+            	8)  Changed some converting prompts 
+            	9)  Fixed a Bug where the container was not set properly when the videostream did not match...
 ------------------------------------------------------------------------------------------
 Version 1.0 	initial Release
