@@ -42,7 +42,7 @@ bool readOutSettingFile(UserInterface& ui, FileManager& filemanager, std::string
   {
     if (filemanager.readSettings() == false)
     {
-      settings_error_msg = "There occured an error at reading out the \"Settings\"-file (some settings were corrupt). Please check settings-menu.";
+      settings_error_msg = "There occured an error at reading out the \"Settings\"-file (some settings were corrupt). Please check settings-menu and focus on the red settings.";
       return false;
     }
   } catch (OpenFileException)
@@ -65,7 +65,7 @@ void setCommandLineSetting(UserInterface& ui, SettingsMode& settingsmode, std::s
 {
   if (settingsmode.getSettingsParam(set_spec) != settings_value)
   {
-    if (settingsmode.writeParam(settings_value, set_spec) != Settings::PARAM_CHANGE_SUCCESS)
+    if (settingsmode.writeParam(settings_value, set_spec, true, false) != Settings::PARAM_CHANGE_SUCCESS)
     {
       ui.writeString("Warning: Ignoring invalid value for option: " + settingsmode.getSettingsName(set_spec) + ".", true, "yellow");
     }
@@ -402,7 +402,7 @@ int main(int argc, char** argv)
     for (unsigned int config_file_nr = 0; config_file_nr < config_files.size(); ++config_file_nr)
     {
       std::string config_file = config_files[config_file_nr];
-      settingsmode.writeParam(config_file, SettingsMode::CONFIGNAME);
+      settingsmode.writeParam(config_file, SettingsMode::CONFIGNAME, true, false);
 
       ui.writeString("Processing config-file: " + config_file, true);
       if (readOutPreferenceFile(ui, filemanager, vecman) == true)
@@ -424,7 +424,7 @@ int main(int argc, char** argv)
   }
   else if (config_files.empty() == false)
   {
-    settingsmode.writeParam(config_files[0], SettingsMode::CONFIGNAME);
+    settingsmode.writeParam(config_files[0], SettingsMode::CONFIGNAME, true, false);
   }
 
   analyze.clearAllInstances();

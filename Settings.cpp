@@ -61,11 +61,11 @@ string const Settings::setParam()
   return settings_param_;
 }
 
-Settings::PARAM_CHANGE_RETURN Settings::setParamSilent(string const& new_param)
+Settings::PARAM_CHANGE_RETURN Settings::setParamSilent(string const& new_param, bool force_change)
 {
   PARAM_CHANGE_RETURN param_change_ret = checkParam(new_param, false);
 
-  if (param_change_ret == PARAM_CHANGE_SUCCESS)
+  if (param_change_ret == PARAM_CHANGE_SUCCESS || force_change)
   {
     attemptToChangeParam(new_param);
   }

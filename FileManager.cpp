@@ -27,6 +27,7 @@
 #include <vector>
 #include <cstdlib>
 #include <math.h>
+#include <iostream> //TODO
 
 using namespace std;
 
@@ -97,8 +98,9 @@ bool FileManager::readSettings() throw(FileReadException,
       throw FileReadException();
     }
 
-    if (setting_.writeParam(setting_value, setting_name, false) == Settings::PARAM_CHANGE_ERROR)
+    if (setting_.writeParam(setting_value, setting_name, false, true) == Settings::PARAM_CHANGE_ERROR)
     {
+        std::cout << setting_name << " with param: " << setting_value << " did not" << std::endl;
       all_settings_succeeded = false;
     }
   }

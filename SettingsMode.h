@@ -83,9 +83,9 @@ public:
     return settings_vector_.size();
   }
   
-  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, SETTING_SPECIFIER setting_nr, bool manually_changed = true)
+  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, SETTING_SPECIFIER setting_nr, bool manually_changed, bool force_change)
   {
-    Settings::PARAM_CHANGE_RETURN changes_success = settings_vector_.at(setting_nr)->setParamSilent(new_setting);
+    Settings::PARAM_CHANGE_RETURN changes_success = settings_vector_.at(setting_nr)->setParamSilent(new_setting, force_change);
     
     if (manually_changed && changes_success == Settings::PARAM_CHANGE_SUCCESS)
     {
@@ -95,14 +95,14 @@ public:
     return changes_success;
   }
     
-  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, std::string setting_name, bool manually_changed = true)
+  const Settings::PARAM_CHANGE_RETURN writeParam(string new_setting, std::string setting_name, bool manually_changed, bool force_change)
   {
     for (unsigned int setting_num = 0; setting_num < settings_vector_.size(); ++ setting_num)
     {
       SETTING_SPECIFIER setting_specifier = static_cast<SETTING_SPECIFIER>(setting_num);
       if (setting_name == settings_vector_[setting_specifier]->getName())
       {
-        return writeParam(new_setting, setting_specifier, manually_changed);
+        return writeParam(new_setting, setting_specifier, manually_changed, force_change);
       }
     }
 

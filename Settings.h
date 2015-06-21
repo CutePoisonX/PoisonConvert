@@ -61,11 +61,11 @@ public:
   
   void resetSetting()
   {
-    setParamSilent(settings_default_param_);
+    setParamSilent(settings_default_param_, true);
   }
     
   virtual string const setParam();
-  virtual PARAM_CHANGE_RETURN setParamSilent(string const& new_param);
+  virtual PARAM_CHANGE_RETURN setParamSilent(string const& new_param, bool force_change);
   virtual PARAM_CHANGE_RETURN checkParam(string const& new_param, bool ui_output) = 0;
   PARAM_CHANGE_RETURN checkParam(bool ui_output)
   {
