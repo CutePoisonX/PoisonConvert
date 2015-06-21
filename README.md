@@ -1,11 +1,15 @@
 PoisonConvert
 =============
 
-A little tool to batch-convert movies
+A little tool to batch-convert movies based on your preferences.
 
-This progam was designed to batch-convert movies on a Synology-DiskStation.
+## Installation on Synology DiskStations
 
-## Installation
+There is a install script available for Synology DiskStations. 
+You can download it here: http://www.mediaware-factory.com/#!leer/c1y0n (or through the github release).
+Please follow the installation instructions at: http://www.mediaware-factory.com/#!poisonconvert-faqs/c1i99
+
+## Installation from Source
 
 You can download and compile it on your system with:
 
@@ -14,11 +18,9 @@ You can download and compile it on your system with:
 2) cd PoisonConvert
 
 3) make
-
-4) make install
    
-Done :)
-(You can delete the source-files now)
+This will produce a binary "poisonconvert" in the current directory.
+Before you invoke "make install", make sure that /opt/bin and /opt/etc are available.
 
 ## How to use
 
@@ -26,16 +28,5 @@ For further instructions please read the Wiki:
 https://github.com/CutePoisonX/PoisonConvert/wiki
 
 ## Deinstallation
-If you want to uninstall the program, cd into the source directory and do:
+If you want to uninstall PoisonConvert on a Synology DiskStation, please execute the install script again and select uninstall.
 
-1) make uninstall
-
-or perform the following steps:
-
-1) rm /opt/bin/poisonconvert
-
-2) rm /opt/etc/PoisonConvert_Settings
-
-3) rm -r /opt/etc/PoisonConvert_Config-files
-
-and don't forget to remove the other Config files and the log files.
