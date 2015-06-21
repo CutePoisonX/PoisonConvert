@@ -48,7 +48,14 @@ bool readOutSettingFile(UserInterface& ui, FileManager& filemanager, std::string
   } catch (OpenFileException)
   {
     settings_error_msg = "Created default settings-file \"PoisonConvert_Settings\" in /usr/syno/etc/poisonconvert/. Please check settings-menu.";
-    filemanager.saveSettingsToFile();
+    try
+    {
+      filemanager.saveSettingsToFile();
+    }
+    catch (exception)
+    {
+      return false;
+    }
     
     return false;
   } catch (exception)
