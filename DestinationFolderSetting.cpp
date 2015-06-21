@@ -44,7 +44,7 @@ void DestinationFolderSetting::attemptToChangeParam(string new_param)
   {
     new_param = "Destination equals source";
   }
-  else
+  else if (new_param != "Destination equals source")
   {
     size_t position = new_param.find_last_of("/");
       
