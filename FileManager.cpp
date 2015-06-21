@@ -345,6 +345,7 @@ void FileManager::readPrefs(ifstream& readfile, unsigned int identifier,
     {
       getline(readfile, params[param_nr - 1], 'H');
       ReadFileError(readfile);
+
       if(param_nr == 5)
       {
         getline(readfile, tmp_string, '\n');
@@ -354,7 +355,8 @@ void FileManager::readPrefs(ifstream& readfile, unsigned int identifier,
           readfile.close();
           throw FileReadException();
         }
-      } else
+      }
+      else
       {
         getline(readfile, tmp_string, 'T');
         ReadFileError(readfile);
@@ -371,6 +373,11 @@ void FileManager::readPrefs(ifstream& readfile, unsigned int identifier,
     //convert the label to a number ...
     if (identifier == SRCAUDIO)
     {
+        if (params[0] == "dts")
+        {
+            //check if param is dts and change it to dca:
+            params[0] = "dca";
+        }
     	if (params[1] == "stereo")
 		  {
 		  	params[1] = "2";
