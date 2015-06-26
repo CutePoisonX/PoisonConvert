@@ -4,8 +4,8 @@ LDFLAGS=
 SOURCES = $(wildcard *.cpp)
 OBJECTS = ${SOURCES:.cpp=.o}
 
-CONFDESTDIR = /usr/syno/etc/
-DESTDIR = /usr/syno/bin/
+CONFDESTDIR = /usr/syno/etc
+DESTDIR = /usr/syno/bin
 CONFDIRNAME = PoisonConvert_Config-files
 SETTINGS_FILE = /usr/syno/etc/PoisonConvert_Settings
 
