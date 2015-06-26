@@ -4,10 +4,10 @@ LDFLAGS=
 SOURCES = $(wildcard *.cpp)
 OBJECTS = ${SOURCES:.cpp=.o}
 
-CONFDESTDIR = /opt/etc
-DESTDIR = /opt/bin
+CONFDESTDIR = /usr/syno/etc/
+DESTDIR = /usr/syno/bin/
 CONFDIRNAME = PoisonConvert_Config-files
-SETTINGS_FILE = /opt/etc/PoisonConvert_Settings
+SETTINGS_FILE = /usr/syno/etc/PoisonConvert_Settings
 
 TITLE = poisonconvert
 ARCHIVE=$(TITLE).tar.gz
