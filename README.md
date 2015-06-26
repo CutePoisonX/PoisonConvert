@@ -22,7 +22,7 @@ You can download and compile it on your system with:
 3) make
    
 This will produce a binary "poisonconvert" in the current directory.
-Before you invoke "make install", make sure that /opt/bin and /opt/etc are available.
+Before you invoke "make install", make sure that the directories /usr/syno/bin and /usr/syno/etc are available.
 
 ## How to use
 
