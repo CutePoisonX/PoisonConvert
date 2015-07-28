@@ -72,7 +72,7 @@ private:
   void                  evaluatingTargets(unsigned int priority_wish, 
                                           unsigned int identifier,
                                           unsigned int priority_orig);
-  void                  optimizeFile(string& filename, string erase_log);
+  void                  optimizeFile(string& filename);
   void                  WriteLog(string message);
   void                  WriteLogHeader(int job);
   void                  WriteLogAnalyze(unsigned int identifier);

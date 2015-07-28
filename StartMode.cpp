@@ -279,7 +279,7 @@ int StartMode::executeCommand()
 	        if(settings_.getSettingsParam(SettingsMode::OPTIMIZESET) == "Yes" && (out_container_ == "m4v" ||
 	           out_container_ == "mov" || out_container_ == "mp4"))
 	        {
-	          optimizeFile(filename_noext, logfile_);
+	          optimizeFile(filename_noext);
 	        }
 	
             if (settings_.getSettingsParam(SettingsMode::DESTINATION) != "Destination equals source")
@@ -707,7 +707,7 @@ void StartMode::evaluatingTargets(unsigned int priority_wish, unsigned int ident
 
 }
 
-void StartMode::optimizeFile(string& filename, string erase_log)
+void StartMode::optimizeFile(string& filename)
 {
   string new_filename = "\"";
   string filename_no_ext;
@@ -727,14 +727,14 @@ void StartMode::optimizeFile(string& filename, string erase_log)
   qt_start.append(filename);
   qt_start.append("\" ");
   qt_start.append(new_filename);
+  qt_start.append("\" >> \"");
   qt_start.append(logfile_);
-  qt_start.append(" 2>> ");
-  qt_start.append(erase_log);
+  qt_start.append("\" 2>&1");
 
   system(qt_start.c_str());
   
   remove(filename.c_str());
-  rename(new_filename.c_str(), filename.c_str());
+  rename((new_filename.substr(1)).c_str(), filename.c_str());
   
   ui_.writeString("  Finished optimizing...", true, "yellow");
 }
