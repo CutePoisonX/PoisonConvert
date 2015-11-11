@@ -34,27 +34,27 @@ public:
   
   enum PARAM_CHANGE_RETURN
 	{
-        PARAM_CHANGE_SUCCESS,
+    PARAM_CHANGE_SUCCESS,
 		PARAM_CHANGE_ERROR,
 		EXIT_SETTING
 	};
 
-  string const getName()
+  string const getName() const
   {
     return settings_name_;
   }
   
-  string const getParam()
+  string const getParam() const
   {
     return settings_param_;
   }
     
-  string const getDefaultParam()
+  string const getDefaultParam() const
   {
     return settings_default_param_;
   }
 
-  string const getDescription()
+  string const getDescription() const
   {
     return settings_description_;
   }

@@ -19,6 +19,7 @@
 
 #include "StartMode.h"
 #include "UserInterface.h"
+#include "ListSetting.h"
 #include <sstream>
 #include <unistd.h>
 #include <stdio.h>
@@ -91,25 +92,35 @@ int StartMode::listDirectory(string dir, vector<string>& files_of_interest)
 
     for(unsigned int k = 0; k < vec_size; k++)
     {
-      if ((path_ext == important_files_.at(k) || //matches exactly
-          important_files_.at(k) == "-" || //all fileextensions match
-          (important_files_.at(k).compare(0,3, "NOT") == 0 && important_files_.at(k).compare(3, string::npos, path_ext) == 0)) //matches when filextension is "not"...
-          && path_ext != "old") //extension "old" is never a match
+      if (!settings_.getSpecialSetting<ListSetting>(SettingsMode::EXCLUDE)->stringIsIncluded(path_ext))
       {
-        bool add_file = true;
-        for(unsigned int important_file_nr = 0; important_file_nr < vec_size; important_file_nr++) //check if file is already added
+        if ((path_ext == important_files_.at(k) || //matches exactly
+            important_files_.at(k) == "-" || //all fileextensions match
+            (important_files_.at(k).compare(0,3, "NOT") == 0 && important_files_.at(k).compare(3, string::npos, path_ext) == 0)) //matches when filextension is "not"...
+            && path_ext != "old") //extension "old" is never a match
         {
-        	if (important_files_.at(important_file_nr) == path)
-        	{
-        		add_file = false;
-        		break;
-        	}
+          bool add_file = true;
+          for(unsigned int important_file_nr = 0; important_file_nr < vec_size; important_file_nr++) //check if file is already added
+          {
+            if (important_files_.at(important_file_nr) == path)
+            {
+              add_file = false;
+              break;
+            }
+          }
+          if (add_file == true)
+          {
+            ui_.writeString("Found file: " + path, true);
+            files_of_interest.push_back(path);
+          }
+          break;
         }
-        if (add_file == true)
-        {
-        	ui_.writeString("Found file: " + path, true);
-        	files_of_interest.push_back(path);
-        }
+      }
+      else
+      {
+        ui_.writeString("Found file: " + path + "(");
+        ui_.writeString("excluding", false, "red");
+        ui_.writeString(")", true);
         break;
       }
     }

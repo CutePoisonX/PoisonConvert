@@ -42,7 +42,8 @@ public:
           OPTIMIZESET,
           LOGPATH,
           MOVIEPATH,
-          DESTINATION
+          DESTINATION,
+          EXCLUDE
          };
     
     enum SAVE_SETTINGS {
@@ -55,6 +56,12 @@ public:
   virtual      ~SettingsMode();
   
   int           executeCommand();
+
+  template <typename SettingsClass>
+  SettingsClass const* const getSpecialSetting(unsigned int setting_nr) const
+  {
+    return dynamic_cast<SettingsClass const* const>(settings_vector_.at(setting_nr));
+  }
 
   const string getSettingsParam(unsigned int setting_nr) const
   {

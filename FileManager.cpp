@@ -537,7 +537,7 @@ void FileManager::readPropsVideo(string line, string (&params)[5])
   
   //Bitrate
   //Note: due to certain limitations, the bitrate is set in the method: readProperties()
-  if(params[2].substr(params[2].length() - 4) == "kb/s")
+  if(params[2].length() >= 4 && params[2].substr(params[2].length() - 4) == "kb/s")
   {
     stringToInt(params[2], bitrate_nr);
     bitrate_nr = bitrate_nr*1000;

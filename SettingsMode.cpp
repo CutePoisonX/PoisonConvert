@@ -21,6 +21,7 @@
 #include "UserInterface.h"
 #include "YesNoSetting.h"
 #include "FolderSetting.h"
+#include "ListSetting.h"
 #include "DestinationFolderSetting.h"
 #include "ExecutableFileSetting.h"
 #include "FileSetting.h"
@@ -61,8 +62,11 @@ SettingsMode::SettingsMode(UserInterface& ui)
   
   settings_vector_.push_back(new FolderSetting(ui, "movies-path", "Where to look for movies",
   "Please enter the path where poisonconvert should look for files", ""));
-  
+
   settings_vector_.push_back(new DestinationFolderSetting(ui));
+  
+  settings_vector_.push_back(new ListSetting(ui, "exclude", "List of fileextensions that are never processed",
+  "fileextension", "nfo,jpeg,jpg,png,bmp,tbn,tmp,temp,zip,rar"));
   //----------------------------------------------------------------------------
 }
 
