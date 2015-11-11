@@ -1,3 +1,7 @@
+Version 1.4.2   1) Included a new setting to set filextensions that will never be processed.
+		    The setting can be set via the settings menu or the command line with the flag: -e
+		2) Small fixes
+
 Version 1.4.1   1)  Improved file properties-recognition
 		2)  The not[value] parameter does work now with containers
 		3)  Fixed bug where audio and subtitle-stream properties were not detected properly when no language
