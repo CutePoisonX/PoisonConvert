@@ -7,7 +7,7 @@
 
 #include "ListSetting.h"
 #include "UserInterface.h"
-#include <iostream>
+#include <algorithm>
 
 ListSetting::ListSetting(UserInterface ui, string name, string description,
                          string one_word_description, string default_param)

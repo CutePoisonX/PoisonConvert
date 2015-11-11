@@ -19,6 +19,7 @@
 
 #include <cstdlib>
 #include <string>
+#include <algorithm>
 #include <tclap/CmdLine.h>
 
 #include "VectorSourceManager.h"
@@ -122,7 +123,7 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
     TCLAP::ValueArg<std::string> log_path_arg("l", settingsmode.getSettingsName(SettingsMode::LOGPATH), "Location of logfiles.", false, settingsmode.getSettingsParam(SettingsMode::LOGPATH), "path");
     TCLAP::ValueArg<std::string> movie_path_arg("m", settingsmode.getSettingsName(SettingsMode::MOVIEPATH), "Where to look for movies.", false, settingsmode.getSettingsParam(SettingsMode::MOVIEPATH), "path");
     TCLAP::ValueArg<std::string> dest_path_arg("d", settingsmode.getSettingsName(SettingsMode::DESTINATION), "Where to save processed movies.", false, settingsmode.getSettingsParam(SettingsMode::DESTINATION), "path");
-    TCLAP::ValueArg<std::string> exlude_ext_arg("e", settingsmode.getSettingsName(SettingsMode::EXCLUDE), "List of fileextensions that are never processed.", false, settingsmode.getSettingsParam(SettingsMode::EXCLUDE), "list");
+    TCLAP::ValueArg<std::string> exlude_ext_arg("e", settingsmode.getSettingsName(SettingsMode::EXCLUDE), "Comma separated list of fileextensions that are never processed.", false, settingsmode.getSettingsParam(SettingsMode::EXCLUDE), "list");
 
     cmd.add(start_arg);
     cmd.add(conf_file_arg);
@@ -156,7 +157,10 @@ bool parseCmdLineOptions(int argc, char** argv, UserInterface& ui, FileManager& 
       setCommandLineSetting(ui, settingsmode, log_path_arg.getValue(), SettingsMode::LOGPATH);
       setCommandLineSetting(ui, settingsmode, movie_path_arg.getValue(), SettingsMode::MOVIEPATH);
       setCommandLineSetting(ui, settingsmode, dest_path_arg.getValue(), SettingsMode::DESTINATION);
-      setCommandLineSetting(ui, settingsmode, exlude_ext_arg.getValue(), SettingsMode::EXCLUDE);
+      std::string exclude_list = exlude_ext_arg.getValue();
+      std::transform(exclude_list.begin(), exclude_list.end(), exclude_list.begin(),
+                     ::tolower);
+      setCommandLineSetting(ui, settingsmode, exclude_list, SettingsMode::EXCLUDE);
     }
     else
     {
