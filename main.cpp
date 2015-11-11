@@ -35,7 +35,7 @@
  
 using namespace std;
 
-string const version = "1.4.1";
+string const version = "1.4.2";
 
 bool readOutSettingFile(UserInterface& ui, FileManager& filemanager, std::string& settings_error_msg)
 {
